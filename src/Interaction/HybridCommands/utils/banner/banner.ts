@@ -1,0 +1,100 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	ApplicationCommandOptionType,
+	ApplicationCommandType
+} from "discord.js";
+
+import { Command } from "../../../../../types/command.js";
+
+export const command: Command = {
+	name: "banner",
+
+	description: "Pick the banner of specified things (Server/User)",
+	description_localizations: {
+		fr: "Récuperer la bannière des éléments spécifiés (serveur/utilisateur)",
+		ja: "指定されたもののバナーを取得（サーバー/ユーザー）",
+		ru: "Взять баннер указанного объекта (Сервер/Пользователь)",
+		"es-ES": "Tomar el banner de cosas especificadas (Servidor/Usuario)"
+	},
+
+	category: "utils",
+	options: [
+		{
+			name: "user",
+			prefixName: "banner-user",
+
+			description: "Get the banner of a specified user!",
+			description_localizations: {
+				fr: "Récuperer la bannière des éléments spécifiés (serveur/utilisateur)",
+				ja: "指定ユーザーのバナーを取得！",
+				ru: "Получить баннер указанного пользователя!",
+				"es-ES": "Obtener el banner de un usuario especificado!"
+			},
+
+			aliases: ["userbanner", "ubanner"],
+
+			type: ApplicationCommandOptionType.Subcommand,
+			options: [
+				{
+					name: "user",
+					type: ApplicationCommandOptionType.User,
+
+					description: "What the user then?",
+					description_localizations: {
+						fr: "Qu'est-ce que l'utilisateur alors ?",
+						ja: "どのユーザーですか？",
+						ru: "Какой пользователь?",
+						"es-ES": "Cual es el usuario entonces?"
+					},
+
+					required: false,
+
+					permission: null
+				}
+			],
+
+			permission: null
+		},
+		{
+			name: "server",
+			prefixName: "banner-server",
+
+			description: "Get the banner of the server!",
+			description_localizations: {
+				fr: "Récupérer la bannière du serveur",
+				ja: "サーバーのバナーを取得！",
+				ru: "Получить баннер сервера!",
+				"es-ES": "Obtener el banner del servidor!"
+			},
+
+			type: ApplicationCommandOptionType.Subcommand,
+
+			aliases: ["serverbanner"],
+
+			permission: null
+		}
+	],
+	thinking: false,
+	type: ApplicationCommandType.ChatInput,
+	permission: null
+};

@@ -1,0 +1,11 @@
+{
+	"categoryInitializer": {
+		"categoryName": "profil",
+		"categoryColor": "#158ce6",
+		"options": {
+			"description": "help_prof_dsc",
+			"emoji": "${client.iHorizon_Emojis.Sparkles}",
+			"placeholder": "help_prof_fields"
+		}
+	}
+}

@@ -1,0 +1,130 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	ChannelType,
+	Client,
+	TextChannel,
+	VoiceBasedChannel
+} from "discord.js";
+import { DatabaseStructure } from "../../../types/database_structure.js";
+import formatNumber from "../functions/numberBeautifuer.js";
+import logger from "../logger.js";
+
+type memberCountData = {
+	guildId: string;
+	data: DatabaseStructure.MemberCountSchema | undefined;
+}[];
+
+class MemberCountModule {
+	async init() {
+		this.Refresh(await this.GetMemberCountData());
+		setInterval(async () => {
+			this.Refresh(await this.GetMemberCountData());
+		}, 60_000 * 5);
+	}
+
+	private async GetMemberCountData(): Promise<memberCountData> {
+		const result: memberCountData = [];
+
+		for (const guild of client.guilds.cache.values()) {
+			// Only the sub-key is needed: never pull the whole guild document.
+			const data = await client.db.get<
+				DatabaseStructure.DbGuildObject["MCOUNT"]
+			>(`${guild.id}.GUILD.MCOUNT`);
+			if (data) result.push({ guildId: guild.id, data });
+		}
+
+		return result;
+	}
+
+	private async Refresh(memberCountData: memberCountData) {
+		for (const guildObject of memberCountData) {
+			try {
+				const guild = await client.guilds
+					.fetch(guildObject.guildId)
+					.catch(() => null);
+				if (!guild) continue;
+
+				const onlineCount = guild.members.cache.filter(
+					(member) =>
+						member.presence?.status === "online" ||
+						member.presence?.status === "idle" ||
+						member.presence?.status === "dnd"
+				).size;
+				const botMembersCount = guild.members.cache.filter(
+					(m) => m.user.bot
+				).size;
+				const rolesCount = guild.roles.cache.size;
+				const boostsCount = guild.premiumSubscriptionCount || 0;
+				const voiceChannels = guild.channels.cache
+					.filter(
+						(channel): channel is VoiceBasedChannel =>
+							channel.type === ChannelType.GuildVoice ||
+							channel.type === ChannelType.GuildStageVoice
+					)
+					.toJSON();
+
+				let voiceCount = 0;
+				voiceChannels.forEach((channel) => {
+					if ("members" in channel) {
+						voiceCount += channel.members?.size ?? 0;
+					}
+				});
+
+				const baseData = guildObject.data;
+				if (!baseData) continue;
+
+				const mappings: {
+					key: keyof DatabaseStructure.MemberCountSchema;
+					count: number | string;
+				}[] = [
+					{ key: "bot", count: botMembersCount },
+					{ key: "member", count: formatNumber(guild.memberCount) },
+					{ key: "roles", count: rolesCount },
+					{ key: "boost", count: boostsCount },
+					{ key: "channel", count: rolesCount },
+					{ key: "voice", count: voiceCount },
+					{ key: "online", count: onlineCount }
+				];
+
+				for (const { key, count } of mappings) {
+					const data = baseData[key];
+					if (data) {
+						const channel = (await guild.channels
+							.fetch(data.channel!)
+							.catch(() => null)) as TextChannel;
+						if (channel && channel.isTextBased()) {
+							const newName = data.name
+								?.replace(/{\w+Count}/, String(count))
+								?.replace(/{\w+count}/, String(count));
+							await channel.edit({ name: newName });
+						}
+					}
+				}
+			} catch (error) {
+				logger.err("Error handling guildMemberAdd event:" + error);
+			}
+		}
+	}
+}
+
+export { MemberCountModule };

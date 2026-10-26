@@ -1,0 +1,105 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import { Client, ChatInputCommandInteraction } from "discord.js";
+import { LanguageData } from "../../../../../types/languageData.js";
+import { DatabaseStructure } from "../../../../../types/database_structure.js";
+import { SubCommand } from "../../../../../types/command.js";
+import { permissionsRole } from "./perm.js";
+
+export const subCommand: SubCommand = {
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached">,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		if (
+			!interaction.member ||
+			!client.user ||
+			!interaction.user ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		const existingRoles =
+			(await client.db.get(`${interaction.guildId}.UTILS.roles`)) ||
+			({} as DatabaseStructure.UtilsRoleData);
+
+		if (interaction.member.id !== interaction.guild.ownerId) {
+			await client.func.method.interactionSend(interaction, {
+				content: lang.perm_roles_not_owner
+			});
+			return;
+		}
+
+		try {
+			const updatedRoles: DatabaseStructure.UtilsRoleData = {};
+			const createdRoles: string[] = [];
+
+			for (let i = 0; i < permissionsRole.length; i++) {
+				const permLevel = i + 1;
+				const existingRoleId = existingRoles[permLevel];
+
+				if (existingRoleId) {
+					const roleExists = await interaction
+						.guild!.roles.fetch(existingRoleId)
+						.catch(() => null);
+					if (roleExists) {
+						updatedRoles[permLevel as DatabaseStructure.PermLevel] =
+							existingRoleId;
+						continue;
+					}
+				}
+
+				const newRole = await interaction.guild!.roles.create({
+					name: permissionsRole[i]
+				});
+				updatedRoles[permLevel as DatabaseStructure.PermLevel] =
+					newRole.id;
+				createdRoles.push(permissionsRole[i]);
+			}
+
+			await client.db.set(
+				`${interaction.guildId}.UTILS.roles`,
+				updatedRoles
+			);
+
+			if (createdRoles.length > 0) {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.perm_roles_created_role.replace(
+						"${createdRoles.join(', ')}",
+						createdRoles.join(", ")
+					)
+				});
+			} else {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.perm_roles_already_upate
+				});
+			}
+		} catch (error) {
+			await client.func.method.interactionSend(interaction, {
+				content: lang.perm_roles_error
+			});
+		}
+	}
+};

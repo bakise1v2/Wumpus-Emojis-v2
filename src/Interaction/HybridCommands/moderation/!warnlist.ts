@@ -1,0 +1,179 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	Client,
+	EmbedBuilder,
+	ChatInputCommandInteraction,
+	GuildMember,
+	Message,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle
+} from "discord.js";
+
+import { LanguageData } from "../../../../types/languageData.js";
+
+import { DatabaseStructure } from "../../../../types/database_structure.js";
+import { format } from "../../../core/functions/date_and_time.js";
+
+import { SubCommand } from "../../../../types/command.js";
+
+export const subCommand: SubCommand = {
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached"> | Message,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		// Guard's Typing
+		if (
+			!client.user ||
+			!interaction.member ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		if (interaction instanceof ChatInputCommandInteraction) {
+			var member = interaction.options.getMember(
+				"member"
+			) as GuildMember | null;
+		} else {
+			var member = client.func.method.member(
+				interaction,
+				args!,
+				0
+			) as GuildMember | null;
+		}
+
+		const allWarns: DatabaseStructure.WarnsData[] | null =
+			await client.db.get(
+				`${interaction.guildId}.USER.${member?.id}.WARNS`
+			);
+
+		if (!allWarns || allWarns.length === 0) {
+			await client.func.method.interactionSend(interaction, {
+				content: lang.warnlist_no_data
+					.replace(
+						"${client.iHorizon_Emojis.No}",
+						client.iHorizon_Emojis.No
+					)
+					.replace("${member?.toString()}", member?.toString()!)
+			});
+			return;
+		}
+
+		let currentPage = 0;
+		const usersPerPage = 5;
+		const pages: { title: string; description: string }[] = [];
+
+		for (let i = 0; i < allWarns.length; i += usersPerPage) {
+			const pageUsers = allWarns.slice(i, i + usersPerPage);
+			const pageContent = pageUsers
+				.map((x) =>
+					lang.warnlist_embed_desc
+						.replace("${x.id}", x.id)
+						.replace(
+							"${format(x.timestamp, 'DD/MM/YYYY')}",
+							format(x.timestamp, "DD/MM/YYYY").replace("`", "\`")
+						)
+						.replace("${x.authorID}", x.authorID.replace("`", "\`"))
+						.replace("${x.reason}", x.reason.replace("`", "\`"))
+				)
+				.join("\n");
+			pages.push({
+				title: lang.warnlist_embed_title
+					.replace(
+						"${member?.user.globalName}",
+						member?.user.globalName!
+					)
+					.replace(
+						"${i / usersPerPage + 1}",
+						String(i / usersPerPage + 1)
+					),
+				description: pageContent
+			});
+		}
+
+		const createEmbed = async () => {
+			return new EmbedBuilder()
+				.setColor("#010101")
+				.setTitle(pages[currentPage].title)
+				.setDescription(pages[currentPage].description)
+				.setFooter(
+					await client.func.displayBotName.footerPaginationBuilder(
+						interaction.guildId!,
+						lang,
+						currentPage + 1,
+						pages.length
+					)
+				)
+				.setTimestamp();
+		};
+
+		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId("previousPage")
+				.setLabel("<<<")
+				.setStyle(ButtonStyle.Secondary),
+			new ButtonBuilder()
+				.setCustomId("nextPage")
+				.setLabel(">>>")
+				.setStyle(ButtonStyle.Secondary)
+		);
+
+		const messageEmbed = await client.func.method.interactionSend(
+			interaction,
+			{
+				embeds: [await createEmbed()],
+				components: [row],
+				files: [
+					await client.func.displayBotName.footerAttachmentBuilder(
+						interaction
+					)
+				]
+			}
+		);
+
+		const collector = messageEmbed.createMessageComponentCollector({
+			filter: async (i) => {
+				await i.deferUpdate();
+				return interaction.member?.user.id === i.user.id;
+			},
+			time: 60_000 * 15
+		});
+
+		collector.on("collect", async (interaction_2: { customId: string }) => {
+			if (interaction_2.customId === "previousPage") {
+				currentPage = (currentPage - 1 + pages.length) % pages.length;
+			} else if (interaction_2.customId === "nextPage") {
+				currentPage = (currentPage + 1) % pages.length;
+			}
+
+			messageEmbed.edit({ embeds: [await createEmbed()] });
+		});
+
+		collector.on("end", async () => {
+			await messageEmbed.edit({ components: [] });
+		});
+	}
+};

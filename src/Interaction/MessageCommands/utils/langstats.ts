@@ -1,0 +1,98 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import { Client, EmbedBuilder, Message } from "discord.js";
+
+import { LanguageData } from "../../../../types/languageData.js";
+import { Command } from "../../../../types/command.js";
+import { AvailableLanguage } from "../../../core/functions/getLanguageData.js";
+
+export const command: Command = {
+	name: "langstats",
+
+	description: "Get statistics about the lang in the iHorizon Discord Bot",
+	description_localizations: {
+		fr: "Obtenir des informations sur l'utilisation des langues à travers tout les serveur discord du bot iHorizon",
+		ja: "iHorizon Discord Botの言語統計を取得",
+		ru: "Получить статистику языков в iHorizon",
+		"es-ES":
+			"Obtener estadísticas sobre el idioma en el Bot de Discord iHorizon"
+	},
+
+	aliases: [],
+
+	thinking: false,
+	type: "PREFIX_IHORIZON_COMMAND",
+
+	permission: null,
+
+	category: "owner",
+	run: async (
+		client: Client,
+		message: Message<true>,
+		lang: LanguageData,
+		options?: string[]
+	) => {
+		if (!client.func.ownerHelper.isBotOwner(message.author.id)) {
+			await client.func.method.interactionSend(message, {
+				content: lang.blacklist_not_owner
+			});
+			return;
+		}
+
+		const allLangsStats: Record<string, number> = {};
+
+		for (const guild of client.guilds.cache.values()) {
+			// Only the sub-key is needed: never pull the whole guild document.
+			const lang =
+				(await client.db.get<string>(`${guild.id}.GUILD.LANG.lang`)) ||
+				"en-US";
+			if (allLangsStats[lang]) {
+				allLangsStats[lang] = allLangsStats[lang] + 1;
+			} else {
+				allLangsStats[lang] = 1;
+			}
+		}
+
+		const embed = new EmbedBuilder()
+			.setColor(2829617)
+			.setDescription(
+				`# Stats Lang over all iHorizon guilds (${client.guilds.cache.size} guilds)`
+			)
+			.setFooter(
+				await client.func.displayBotName.footerBuilder(message.guildId)
+			);
+		Object.entries(allLangsStats).forEach(([code, count]) => {
+			embed.addFields({
+				name:
+					(AvailableLanguage.find((x) => x.code === code)?.flag ??
+						"❔") + ` (${code})`,
+				value: `${count} guilds`,
+				inline: true
+			});
+		});
+
+		await client.func.method.interactionSend(message, {
+			embeds: [embed]
+		});
+		return;
+	}
+};

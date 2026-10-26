@@ -1,0 +1,75 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	ChatInputCommandInteraction,
+	Client,
+	Message,
+	PermissionsBitField
+} from "discord.js";
+
+import { LanguageData } from "../../../../types/languageData.js";
+import { Command } from "../../../../types/command.js";
+
+export const command: Command = {
+	name: "toggle-react",
+	aliases: ["react-toggle", "togglereact", "reacttoggle"],
+
+	description: "Enable / Disable the reaction when user greets someone",
+	description_localizations: {
+		fr: "Activer/Désactiver la réaction lorsque l'utilisateur salue quelqu'un",
+		ja: "ユーザーが挨拶した時のリアクションを有効/無効",
+		ru: "Включить/выключить реакцию при приветствии",
+		"es-ES":
+			"Habilitar / Deshabilitar la reacción cuando un usuario saluda a alguien"
+	},
+
+	thinking: false,
+	category: "guildconfig",
+	type: "PREFIX_IHORIZON_COMMAND",
+	permission: PermissionsBitField.Flags.ManageGuildExpressions,
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached"> | Message<true>,
+		lang: LanguageData,
+		options?: string[]
+	) => {
+		const state = await client.db.get(
+			`${interaction.guildId}.GUILD.GUILD_CONFIG.hey_reaction`
+		);
+
+		await client.db.set(
+			`${interaction.guildId}.GUILD.GUILD_CONFIG.hey_reaction`,
+			!state
+		);
+		const activeMsg = !state
+			? lang.toggle_react_react
+			: lang.toggle_react_doesnt_react;
+
+		await interaction.reply({
+			content: lang.toggle_react_command_work
+				.replace("{activeMsg}", activeMsg)
+				.replace("${interaction.member?.id}", interaction.member?.id!),
+			allowedMentions: { repliedUser: false }
+		});
+		return;
+	}
+};

@@ -1,0 +1,101 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import { Assets } from "../../../types/assets.js";
+import { secureRandomFloat } from "./random.js";
+
+export enum GatewayMethod {
+	GenerateOauthLink = 0,
+	CreateAuthRestoreGuild = 1,
+	ForceJoinAuthRestore = 2,
+	AddSecurityCodeAmount = 3,
+	ChangeRole = 4,
+	UserInfo = 5,
+	ServerBackup = 6,
+	SecureWebhook = 7,
+	CreateCustomVanity = 8,
+	ImageGeneration = 9
+}
+
+export function assetsFinder(body: Assets, type: string): string {
+	const asset = body[type];
+	const paths = asset?.paths;
+
+	if (!paths || paths.length === 0)
+		throw `Error: no ${type} assets in repositories.json`;
+
+	return paths[Math.floor(secureRandomFloat() * paths.length)];
+}
+
+export function HorizonGateway(gateway_method: GatewayMethod): string {
+	return buildGatewayUrl(client.config.api.HorizonGateway, gateway_method);
+}
+
+export function HorizonGatewayInternal(gateway_method: GatewayMethod): string {
+	const local = client.config.api.HorizonGatewayLocal;
+
+	if (local) return buildGatewayUrl(local, gateway_method);
+	return HorizonGateway(gateway_method);
+}
+
+function buildGatewayUrl(
+	base: string | undefined,
+	gateway_method: GatewayMethod
+): string {
+	if (!base) throw "Error: HorizonGateway empty in the configurations files";
+
+	let data = base.replace(/\/+$/, "");
+
+	switch (gateway_method) {
+		case 0:
+			data += "/api/ihorizon/v1/oauth2";
+			break;
+		case 1:
+			data += "/api/ihorizon/v1/create-oauth2";
+			break;
+		case 2:
+			data += "/api/ihorizon/v1/forcejoin";
+			break;
+		case 3:
+			data += "/api/ihorizon/v1/securityCodeUpdate";
+			break;
+		case 4:
+			data += "/api/ihorizon/v1/role";
+			break;
+		case 5:
+			data += "/api/ihorizon/v1/userinfo";
+			break;
+		case 6:
+			data += "/api/ihorizon/v1/serverBackup";
+			break;
+		case 7:
+			data += "/api/v1/securewebhook/manage";
+			break;
+		case 8:
+			data += "/api/ihorizon/v1/vanity-creation";
+			break;
+		case 9:
+			data += "/api/ihorizon/v1/image";
+			break;
+	}
+
+	return data;
+}

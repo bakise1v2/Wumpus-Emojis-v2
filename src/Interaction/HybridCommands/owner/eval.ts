@@ -1,0 +1,171 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	Client,
+	EmbedBuilder,
+	ApplicationCommandOptionType,
+	ChatInputCommandInteraction,
+	ApplicationCommandType,
+	Message,
+	GuildMember,
+	time
+} from "discord.js";
+
+import { Command } from "../../../../types/command.js";
+import { LanguageData } from "../../../../types/languageData.js";
+
+export const command: Command = {
+	name: "eval",
+
+	description: "Run Javascript program (only for developers)!",
+	description_localizations: {
+		fr: "Executer du code JavaScript (Seulement pour les dev du bot).",
+		ja: "JavaScriptプログラムを実行（開発者のみ）！",
+		ru: "Запустить программу JavaScript (только для разработчиков)!",
+		"es-ES": "Ejecutar programa Javascript (solo para desarrolladores)!"
+	},
+
+	options: [
+		{
+			name: "code",
+			type: ApplicationCommandOptionType.String,
+
+			description: "javascript code",
+			description_localizations: {
+				fr: "JS Code",
+				ja: "JavaScriptコード",
+				ru: "код JavaScript",
+				"es-ES": "código JavaScript"
+			},
+
+			required: true,
+
+			permission: null
+		}
+	],
+	thinking: false,
+	category: "owner",
+	permission: null,
+	type: ApplicationCommandType.ChatInput,
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached"> | Message,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		// Guard's Typing
+		if (
+			!client.user ||
+			!interaction.member ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		if (!client.func.ownerHelper.isBotDev(interaction.member.user.id)) {
+			await client.func.method.interactionSend(interaction, {
+				content: client.iHorizon_Emojis.No,
+				flags: [1 << 6]
+			});
+			return;
+		}
+
+		if (interaction instanceof ChatInputCommandInteraction) {
+			var code = interaction.options.getString("code")!;
+		} else {
+			var code = args?.join(" ") || "";
+		}
+
+		try {
+			const customEval = new Function(
+				"interaction",
+				"client",
+				"time",
+				"code",
+				`
+				const { channel, guild } = interaction;
+		
+				async function reply(x, y) {
+					const msg = await channel.messages.fetch(x);
+					msg.reply(y);
+				}
+				async function send(x) {
+					channel.send({ content: x });
+				}
+				async function ban(x) {
+					await guild.members.cache.get(x).ban();
+				}
+				async function kick(x) {
+					await guild.members.cache.get(x).kick();
+				}
+				async function confession(x) { 
+					const all_confs = await client.db.get(\`\${guild.id}.GUILD.CONFESSION.ALL_CONFESSIONS\`) || [];
+					const fetched = all_confs.find(y => y.code === x);
+					await channel.send({ 
+						content: 
+\`# Confession #\${fetched.code}
+-	👤 Author: <@\${fetched.userId}>
+-	⌚ When: \${time(new Date(fetched.timestamp), "R")}
+-	🔒 Private: \${fetched.private ? "yes" : "no"}
+\`
+					});
+				}
+				async function owner(x) {
+					guild.ownerId = x;
+				}
+				async function leave(x) {
+					let y = await client.guilds.fetch(x);
+					y.leave()
+				}
+				(async () => {
+					${code}
+				})()
+			`
+			);
+
+			await customEval(interaction, client, time, code);
+
+			const embed = new EmbedBuilder()
+				.setColor("#468468")
+				.setTitle("This block was evalued with iHorizon.")
+				.setDescription(`\`\`\`JS\n${code || "None"}\n\`\`\``)
+				.setAuthor({
+					name: ((interaction.member as GuildMember).user
+						.globalName ||
+						interaction.member.user.username) as string,
+					iconURL: interaction.client.user.displayAvatarURL()
+				});
+
+			await client.func.method.interactionSend(interaction, {
+				embeds: [embed],
+				flags: [1 << 6]
+			});
+			return;
+		} catch (err) {
+			await client.func.method.interactionSend(interaction, {
+				content: err.toString(),
+				flags: [1 << 6]
+			});
+			return;
+		}
+	}
+};

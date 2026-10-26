@@ -1,0 +1,72 @@
+{
+	"name": "ihrz",
+	"displayName": "iHorizon Discord Bot",
+	"version": "2026.10.1",
+	"description": "Official codebase of iHorizon Discord Bot.",
+	"main": "./src/index.ts",
+	"scripts": {
+		"start": "bun ./src/index.ts",
+		"auto-build": "npx tsc -w",
+		"build": "npx tsc",
+		"type:func": "bun run tools/Client_Func_Typator.ts",
+		"type:lang": "bun run tools/LangsChecker-Tools.ts --type 2",
+		"check:licence": "bun run tools/Licence_Workspace_Checker.ts",
+		"check:lines": "bun run tools/Lines_Count.ts",
+		"check:lc": "bun run check:lines",
+		"check:emoji": "bun run tools/Emoji_Creator.ts",
+		"dev": "echo \"Enjoy dev <3\" && bun run src/core/bot.ts",
+		"format": "prettier --write \"**/*.ts\"",
+		"test": "bun test"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://gitlab.com/ihrz/ihrz"
+	},
+	"keywords": [
+		"discordbot",
+		"discordjs",
+		"discord-bot"
+	],
+	"type": "module",
+	"author": {
+		"email": "anais.saraiva@ihorizon.org",
+		"name": "Kisakay",
+		"legalName": "Anaïs Saraiva",
+		"url": "https://kisakay.com"
+	},
+	"license": "CC-BY-NC-SA-4.0",
+	"bugs": {
+		"url": "https://gitlab.com/ihrz/ihrz/issues"
+	},
+	"homepage": "https://gitlab.com/ihrz/ihrz#readme",
+	"dependencies": {
+		"@discordjs/voice": "^0.19.2",
+		"discord-html-transcripts": "3.2.0",
+		"discord.js": "^14.27.0",
+		"gifwrap": "^0.10.1",
+		"jimp": "0.22.12",
+		"jszip": "^3.10.2",
+		"lavalink-client": "^2.11.0",
+		"nodemailer": "^7.0.13",
+		"puppeteer": "^24.43.1",
+		"rss-parser": "^3.13.0",
+		"horizondb": "https://gitlab.com/ihrz/db.git#1cbdb2acc0b717b546c663d25ca9bc549047bb3e",
+		"typescript-eslint": "^8.72.0",
+		"xml2js": "^0.6.2",
+		"youtubei.js": "^17.2.0"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.5",
+		"@types/bun": "^1.4.3",
+		"@types/node": "^24.19.2",
+		"@types/nodemailer": "^7.0.12",
+		"@types/xml2js": "^0.4.14",
+		"@typescript-eslint/eslint-plugin": "^8.72.0",
+		"@typescript-eslint/parser": "^8.72.0",
+		"eslint": "^9.39.5",
+		"eslint-plugin-unused-imports": "^4.4.1",
+		"prettier": "^3.9.10",
+		"tslib": "^2.8.1",
+		"typescript": "^5.9.3"
+	}
+}

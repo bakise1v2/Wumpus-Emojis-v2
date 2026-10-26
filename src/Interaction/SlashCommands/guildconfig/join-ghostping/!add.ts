@@ -1,0 +1,108 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	Client,
+	BaseGuildTextChannel,
+	ChatInputCommandInteraction,
+	GuildChannel,
+	EmbedBuilder
+} from "discord.js";
+import { LanguageData } from "../../../../../types/languageData.js";
+import { DatabaseStructure } from "../../../../../types/database_structure.js";
+
+import { SubCommand } from "../../../../../types/command.js";
+
+export const subCommand: SubCommand = {
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached">,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		// Guard's Typing
+		if (
+			!interaction.member ||
+			!client.user ||
+			!interaction.user ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		const channel = interaction.options.getChannel(
+			"channel"
+		) as GuildChannel;
+		const allData: DatabaseStructure.GhostPingData["channels"] =
+			(await client.db.get(
+				`${interaction.guildId}.GUILD.GUILD_CONFIG.GHOST_PING.channels`
+			)) || [];
+
+		const all_channels = new Set(
+			allData?.filter((x) => interaction.guild?.channels.cache.get(x))
+		);
+
+		if (all_channels?.has(channel.id)) {
+			await client.func.method.interactionSend(interaction, {
+				content: lang.joinghostping_add_already_set.replace(
+					"${channel}",
+					channel.toString()
+				)
+			});
+			return;
+		}
+
+		all_channels.add(channel.id);
+		await client.db.set(
+			`${interaction.guildId}.GUILD.GUILD_CONFIG.GHOST_PING.channels`,
+			Array.from(all_channels)
+		);
+
+		(channel as BaseGuildTextChannel).send({
+			content: lang.joinghostping_add_sent_to_channel
+		});
+
+		const embed = new EmbedBuilder()
+			.setTitle(lang.joinghostping_add_ok_embed_title)
+			.setColor("#475387")
+			.setDescription(lang.joinghostping_add_ok_embed_desc)
+			.addFields({
+				name: lang.joinghostping_add_ok_embed_fields_name,
+				value: all_channels
+					? Array.from(
+							Array.from(all_channels).map((x) => `<#${x}>`)
+						).join("\n")
+					: `<#${channel.id}>`
+			});
+
+		await client.func.ihorizon_logs(interaction, {
+			title: lang.joinghostping_add_logs_embed_title,
+			description: lang.joinghostping_add_logs_embed_desc
+				.replace("${interaction.user}", interaction.user.toString())
+				.replace("${channel}", channel.toString())
+		});
+
+		await client.func.method.interactionSend(interaction, {
+			embeds: [embed]
+		});
+		return;
+	}
+};

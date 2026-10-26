@@ -1,0 +1,1339 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	APIApplicationCommandPermissionsConstant,
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
+	PermissionFlagsBits
+} from "discord.js";
+
+import { Command } from "../../../../types/command.js";
+
+function to(x: number) {
+	const result = [];
+	for (let i = 1; i <= x; i++) {
+		result.push({
+			name: `Amount: ${i}`,
+			name_localizations: {
+				fr: `Nombre: ${i}`,
+				ja: "amount_i",
+				ru: "amount_i",
+				"es-ES": "amount_i"
+			},
+			value: `${i}`
+		});
+	}
+	return result;
+}
+
+export const command: Command = {
+	name: "fun",
+	name_localizations: {
+		fr: "fun",
+		ja: "fun",
+		ru: "fun",
+		"es-ES": "fun"
+	},
+
+	description: "Subcommand for fun category!",
+	description_localizations: {
+		fr: "Commande sous-groupé pour la catégorie d'amusement",
+		ja: "Funカテゴリのサブコマンド！",
+		ru: "Подкоманда для категории развлечений!",
+		"es-ES": "Subcomando para la categoría de diversión!"
+	},
+
+	options: [
+		{
+			name: "animals",
+			name_localizations: {
+				fr: "animaux",
+				ja: "animals",
+				ru: "animals",
+				"es-ES": "animals"
+			},
+
+			description: "Fun commands related to animals",
+			description_localizations: {
+				fr: "commande liée au animaux",
+				ja: "動物関連のFunコマンド",
+				ru: "Развлекательные команды с животными",
+				"es-ES": "Comandos divertidos relacionados con animales"
+			},
+
+			options: [
+				{
+					name: "cat",
+					name_localizations: {
+						fr: "chat",
+						ja: "cat",
+						ru: "cat",
+						"es-ES": "cat"
+					},
+
+					description: "Get a picture of cat!",
+					description_localizations: {
+						fr: "Obtenez une photo du chat",
+						ja: "猫の画像を取得！",
+						ru: "Получить картинку кота!",
+						"es-ES": "Obtener una imagen de un gato!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "dog",
+					name_localizations: {
+						fr: "chien",
+						ja: "dog",
+						ru: "dog",
+						"es-ES": "dog"
+					},
+
+					description: "Get a picture of dog!",
+					description_localizations: {
+						fr: "Obtenez une photo du chien",
+						ja: "犬の画像を取得！",
+						ru: "Получить картинку собаки!",
+						"es-ES": "Obtener una imagen de un perro!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "duck",
+					name_localizations: {
+						fr: "cannard",
+						ja: "duck",
+						ru: "duck",
+						"es-ES": "duck"
+					},
+
+					description: "Get a picture of duck!",
+					description_localizations: {
+						fr: "Obtenez une photo de cannard",
+						ja: "アヒルの画像を取得！",
+						ru: "Получить картинку утки!",
+						"es-ES": "Obtener una imagen de un pato!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "panda",
+
+					description: "Get a picture of panda!",
+					description_localizations: {
+						fr: "Obtenez une photo de panda",
+						ja: "パンダの画像を取得！",
+						ru: "Получить картинку панды!",
+						"es-ES": "Obtener una imagen de un panda!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "fox",
+
+					description: "Get a picture of fox!",
+					description_localizations: {
+						fr: "Obtenez une photo de renard",
+						ja: "キツネの画像を取得！",
+						ru: "Получить картинку лисы!",
+						"es-ES": "Obtener una imagen de un zorro!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "dolphin",
+
+					description: "Get a picture of dolphin!",
+					description_localizations: {
+						fr: "Obtenez une photo de dauphin",
+						ja: "イルカの画像を取得！",
+						ru: "Получить картинку дельфина!",
+						"es-ES": "Obtener una imagen de un delfín!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "frog",
+
+					description: "Get a picture of frog!",
+					description_localizations: {
+						fr: "Obtenez une photo de grenouille",
+						ja: "カエルの画像を取得！",
+						ru: "Получить картинку лягушки!",
+						"es-ES": "Obtener una imagen de una rana!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "squirrel",
+
+					description: "Get a picture of squirrel!",
+					description_localizations: {
+						fr: "Obtenez une photo d'Écureuil",
+						ja: "リスの画像を取得！",
+						ru: "Получить картинку белки!",
+						"es-ES": "Obtener una imagen de una ardilla!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				}
+			],
+			type: ApplicationCommandOptionType.SubcommandGroup,
+			permission: null
+		},
+		{
+			name: "image",
+
+			description: "Fun commands related about image",
+			description_localizations: {
+				fr: "Commande lié à des manipulation d'image",
+				ja: "画像関連のFunコマンド",
+				ru: "Развлекательные команды с изображениями",
+				"es-ES": "Comandos divertidos relacionados con imágenes"
+			},
+
+			options: [
+				{
+					name: "catsay",
+					name_localizations: {
+						fr: "le-chat-à-dis",
+						ja: "catsay",
+						ru: "catsay",
+						"es-ES": "catsay"
+					},
+
+					description: "Cat say (insert text here)",
+					description_localizations: {
+						fr: "le chat à dit (insérer le texte ici)",
+						ja: "猫が言う（ここにテキストを入力）",
+						ru: "Кот говорит (вставьте текст)",
+						"es-ES": "El gato dice (insertar texto aquí)"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "text",
+
+							description: "The cat say...",
+							description_localizations: {
+								fr: "Le chat dit...",
+								ja: "猫が言う...",
+								ru: "Кот говорит...",
+								"es-ES": "El gato dice..."
+							},
+
+							required: true,
+							type: ApplicationCommandOptionType.String,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "togif",
+
+					description: "Transform image to gif",
+					description_localizations: {
+						fr: "Transformer une image vers un gif",
+						ja: "画像をGIFに変換",
+						ru: "Преобразовать изображение в GIF",
+						"es-ES": "Transformar imagen a gif"
+					},
+
+					options: [
+						{
+							name: "image",
+
+							description: "image file",
+							description_localizations: {
+								fr: "fichier image",
+								ja: "画像ファイル",
+								ru: "файл изображения",
+								"es-ES": "archivo de imagen"
+							},
+
+							permission: null,
+							type: ApplicationCommandOptionType.Attachment,
+							required: true
+						}
+					],
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "captions",
+
+					description: "Add text on top of your own image",
+					description_localizations: {
+						fr: "ajouter du texte au dessus de votre image",
+						ja: "自分の画像の上にテキストを追加",
+						ru: "Добавить текст поверх вашего изображения",
+						"es-ES": "Añadir texto encima de tu propia imagen"
+					},
+
+					options: [
+						{
+							name: "image",
+
+							description: "image file",
+							description_localizations: {
+								fr: "fichier image",
+								ja: "画像ファイル",
+								ru: "файл изображения",
+								"es-ES": "archivo de imagen"
+							},
+
+							permission: null,
+							type: ApplicationCommandOptionType.Attachment,
+							required: true
+						},
+						{
+							name: "query",
+
+							description: "your captions",
+							description_localizations: {
+								fr: "votre texte",
+								ja: "あなたの字幕",
+								ru: "ваши подписи",
+								"es-ES": "tus subtítulos"
+							},
+
+							permission: null,
+							type: ApplicationCommandOptionType.String,
+							required: true
+						}
+					],
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "bubbles",
+
+					description: "Add bubble on top of your own image",
+					description_localizations: {
+						fr: "ajouter une bulle au dessus de votre image",
+						ja: "自分の画像の上に吹き出しを追加",
+						ru: "Добавить пузырек поверх вашего изображения",
+						"es-ES": "Añadir burbuja encima de tu propia imagen"
+					},
+
+					options: [
+						{
+							name: "image",
+
+							description: "image file",
+							description_localizations: {
+								fr: "fichier image",
+								ja: "画像ファイル",
+								ru: "файл изображения",
+								"es-ES": "archivo de imagen"
+							},
+
+							permission: null,
+							type: ApplicationCommandOptionType.Attachment,
+							required: true
+						}
+					],
+
+					type: ApplicationCommandOptionType.Subcommand,
+
+					permission: null
+				},
+				{
+					name: "youtube",
+
+					description:
+						"Permit to send custom youtube comment (real) !",
+					description_localizations: {
+						fr: "Permis d'envoyer un commentaire YouTube personnalisé (réel)",
+						ja: "カスタムYouTubeコメントを送信可能に（実際のコメント）！",
+						ru: "Разрешить отправку пользовательского комментария YouTube (настоящего)!",
+						"es-ES":
+							"Permitir enviar comentario personalizado de YouTube (real)!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user",
+
+							description: "The user",
+							description_localizations: {
+								fr: "L'utilisateur",
+								ja: "ユーザー",
+								ru: "Пользователь",
+								"es-ES": "El usuario"
+							},
+
+							required: true,
+							type: ApplicationCommandOptionType.User,
+
+							permission: null
+						},
+						{
+							name: "comment",
+
+							description: "The comment",
+							description_localizations: {
+								fr: "Le commentaire",
+								ja: "コメント",
+								ru: "Комментарий",
+								"es-ES": "El comentario"
+							},
+
+							required: true,
+							type: ApplicationCommandOptionType.String,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "tweet",
+
+					description: "Permit to send custom tweet !",
+					description_localizations: {
+						fr: "Permis d'envoyer un tweet personnalisé",
+						ja: "カスタムツイートを送信可能に！",
+						ru: "Разрешить отправку пользовательского твита!",
+						"es-ES": "Permitir enviar tweet personalizado!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user",
+
+							description: "The user",
+							description_localizations: {
+								fr: "L'utilisateur",
+								ja: "ユーザー",
+								ru: "Пользователь",
+								"es-ES": "El usuario"
+							},
+
+							required: true,
+							type: ApplicationCommandOptionType.User,
+
+							permission: null
+						},
+						{
+							name: "comment",
+
+							description: "The comment",
+							description_localizations: {
+								fr: "Le commentaire",
+								ja: "コメント",
+								ru: "Комментарий",
+								"es-ES": "El comentario"
+							},
+
+							required: true,
+							type: ApplicationCommandOptionType.String,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "transgender",
+					name_localizations: {
+						fr: "transgenre",
+						ja: "transgender",
+						ru: "transgender",
+						"es-ES": "transgender"
+					},
+
+					description: "all humans have rights",
+					description_localizations: {
+						fr: "tous les humains ont des droits",
+						ja: "全ての人間には権利がある",
+						ru: "все люди имеют права",
+						"es-ES": "todos los humanos tienen derechos"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user",
+
+							description: "the user",
+							description_localizations: {
+								fr: "l'utilisateur",
+								ja: "ユーザー",
+								ru: "пользователь",
+								"es-ES": "el usuario"
+							},
+
+							required: false,
+							type: ApplicationCommandOptionType.User,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				}
+			],
+
+			type: ApplicationCommandOptionType.SubcommandGroup,
+			permission: null
+		},
+		{
+			name: "interaction",
+
+			description: "Interaction between users",
+			description_localizations: {
+				fr: "Interaction entre utilisateurs",
+				ja: "ユーザー間の交流",
+				ru: "Взаимодействие между пользователями",
+				"es-ES": "Interacción entre usuarios"
+			},
+
+			options: [
+				{
+					name: "67",
+					name_localizations: {
+						fr: "67",
+						ja: "67",
+						ru: "67",
+						"es-ES": "67"
+					},
+
+					description: "Send a 67 gif",
+					description_localizations: {
+						fr: "envoi un meme 67",
+						ja: "67のGIFを送信",
+						ru: "Отправить гифку 67",
+						"es-ES": "Enviar un gif de 67"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				},
+				{
+					name: "hack",
+					name_localizations: {
+						fr: "piratage",
+						ja: "hack",
+						ru: "hack",
+						"es-ES": "hack"
+					},
+
+					description: "Hack a user!",
+					description_localizations: {
+						fr: "Pirater un discordiens",
+						ja: "ユーザーをハッキング！",
+						ru: "Взломать пользователя!",
+						"es-ES": "Hackear a un usuario!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user",
+							type: ApplicationCommandOptionType.User,
+
+							description: "The user you want to hack",
+							description_localizations: {
+								fr: "L'utilisateur que vous souhaitez pirater",
+								ja: "ハッキングしたいユーザー",
+								ru: "Пользователь, которого вы хотите взломать",
+								"es-ES": "El usuario que quieres hackear"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "kiss",
+					name_localizations: {
+						fr: "bisous",
+						ja: "kiss",
+						ru: "kiss",
+						"es-ES": "kiss"
+					},
+
+					description: "Kiss a user!",
+					description_localizations: {
+						fr: "Embrasser un utilisateur",
+						ja: "ユーザーにキス！",
+						ru: "Поцеловать пользователя!",
+						"es-ES": "Besar a un usuario!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user",
+							type: ApplicationCommandOptionType.User,
+
+							description: "The user you want to kiss",
+							description_localizations: {
+								fr: "L'utilisateur que vous voulez embrasser",
+								ja: "キスしたいユーザー",
+								ru: "Пользователь, которого вы хотите поцеловать",
+								"es-ES": "El usuario que quieres besar"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "love",
+					name_localizations: {
+						fr: "amour",
+						ja: "love",
+						ru: "love",
+						"es-ES": "love"
+					},
+
+					description: "Show your love compatibilty with the user!",
+					description_localizations: {
+						fr: "Montrez votre compatibilité amoureuse avec l'utilisateur",
+						ja: "ユーザーとの恋愛相性を表示！",
+						ru: "Показать совместимость в любви с пользователем!",
+						"es-ES":
+							"Mostrar tu compatibilidad amorosa con el usuario!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user1",
+							type: ApplicationCommandOptionType.User,
+
+							description:
+								"The user you want to know your love compatibility",
+							description_localizations: {
+								fr: "L'utilisateur avec qui vous souhaitez connaître votre compatibilité amoureuse",
+								ja: "恋愛相性を知りたいユーザー",
+								ru: "Пользователь для проверки совместимости в любви",
+								"es-ES":
+									"El usuario con quien quieres conocer tu compatibilidad amorosa"
+							},
+
+							required: false,
+
+							permission: null
+						},
+						{
+							name: "user2",
+							type: ApplicationCommandOptionType.User,
+
+							description:
+								"The user with whom you want to know love compatibility",
+							description_localizations: {
+								fr: "L'utilisateur avec qui vous voulez connaître la compatibilité amoureuse",
+								ja: "恋愛相性を知りたい相手のユーザー",
+								ru: "Пользователь, с которым вы хотите узнать совместимость в любви",
+								"es-ES":
+									"El usuario con quien quieres saber la compatibilidad amorosa"
+							},
+
+							required: false,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "poll",
+					name_localizations: {
+						fr: "sondage",
+						ja: "poll",
+						ru: "poll",
+						"es-ES": "poll"
+					},
+
+					description: "Create a poll!",
+					description_localizations: {
+						fr: "Créer un sondage",
+						ja: "投票を作成！",
+						ru: "Создать опрос!",
+						"es-ES": "Crear una encuesta!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "message",
+							type: ApplicationCommandOptionType.String,
+
+							description: "The message displayed on the survey",
+							description_localizations: {
+								fr: "Le message affiché sur le sondage",
+								ja: "アンケートに表示されるメッセージ",
+								ru: "Сообщение, отображаемое в опросе",
+								"es-ES": "El mensaje mostrado en la encuesta"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: PermissionFlagsBits.Administrator
+				},
+				{
+					name: "question",
+
+					description: "Ask a question to the bot !",
+					description_localizations: {
+						fr: "Poser une question au bot",
+						ja: "ボットに質問する！",
+						ru: "Задать вопрос боту!",
+						"es-ES": "Hacer una pregunta al bot!"
+					},
+
+					aliases: ["8ball"],
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "question",
+							type: ApplicationCommandOptionType.String,
+
+							description:
+								"The question you want to give for the bot",
+							description_localizations: {
+								fr: "La question que vous souhaitez poser au bot",
+								ja: "ボットに与えたい質問",
+								ru: "Вопрос, который вы хотите задать боту",
+								"es-ES": "La pregunta que quieres dar al bot"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "slap",
+					name_localizations: {
+						fr: "giflé",
+						ja: "slap",
+						ru: "slap",
+						"es-ES": "slap"
+					},
+
+					description: "Slap a user!",
+					description_localizations: {
+						fr: "Gifler un utilisateur",
+						ja: "ユーザーを平手打ち！",
+						ru: "Дать пощечину пользователю!",
+						"es-ES": "Abofetear a un usuario!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user",
+							type: ApplicationCommandOptionType.User,
+
+							description: "The user you want to slap",
+							description_localizations: {
+								fr: "L'utilisateur que vous voulez gifler",
+								ja: "平手打ちしたいユーザー",
+								ru: "Пользователь, которому вы хотите дать пощечину",
+								"es-ES": "El usuario que quieres abofetear"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+
+				{
+					name: "hug",
+					name_localizations: {
+						fr: "calin",
+						ja: "hug",
+						ru: "hug",
+						"es-ES": "hug"
+					},
+
+					description: "Hug a user!",
+					description_localizations: {
+						fr: "Faire un calin d'un utilisateur",
+						ja: "ユーザーをハグ！",
+						ru: "Обнять пользователя!",
+						"es-ES": "Abrazar a un usuario!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "user",
+							type: ApplicationCommandOptionType.User,
+
+							description: "The user you want to hug",
+							description_localizations: {
+								fr: "L'utilisateur que vous souhaitez faire un calin",
+								ja: "ハグしたいユーザー",
+								ru: "Пользователь, которого вы хотите обнять",
+								"es-ES": "El usuario que quieres abrazar"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				}
+			],
+
+			type: ApplicationCommandOptionType.SubcommandGroup,
+			permission: null
+		},
+		{
+			name: "style",
+
+			description: "Fun commands related about text style",
+			description_localizations: {
+				fr: "Commandes fun à propos de la stylisation du texte",
+				ja: "テキストスタイル関連のFunコマンド",
+				ru: "Развлекательные команды со стилями текста",
+				"es-ES": "Comandos divertidos relacionados con estilos de texto"
+			},
+
+			options: [
+				{
+					name: "caracteres",
+					name_localizations: {
+						fr: "caractères",
+						ja: "caracteres",
+						ru: "caracteres",
+						"es-ES": "caracteres"
+					},
+
+					description: "Transform a string into a DarkSasuke!",
+					description_localizations: {
+						fr: "Transformez une chaîne de caractères en DarkSasuke",
+						ja: "文字列をDarkSasukeに変換！",
+						ru: "Преобразовать строку в DarkSasuke!",
+						"es-ES": "Transformar una cadena en DarkSasuke!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "nickname",
+							type: ApplicationCommandOptionType.String,
+
+							description: "your cool nickname to transform !",
+							description_localizations: {
+								fr: "ton surnom cool à transformer",
+								ja: "変換したいクールなニックネーム！",
+								ru: "ваш крутой ник для преобразования!",
+								"es-ES": "tu apodo genial para transformar!"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				},
+				{
+					name: "morse",
+
+					description: "Transform a string into a Morse!",
+					description_localizations: {
+						fr: "Transformer une chaîne en Morse",
+						ja: "文字列をモールス信号に変換！",
+						ru: "Преобразовать строку в азбуку Морзе!",
+						"es-ES": "Transformar una cadena en Morse!"
+					},
+
+					type: ApplicationCommandOptionType.Subcommand,
+					options: [
+						{
+							name: "input",
+							type: ApplicationCommandOptionType.String,
+
+							description:
+								"Enter your input to encrypt/decrypt in morse",
+							description_localizations: {
+								fr: "Entrez votre entrée pour crypter/décrypter en morse",
+								ja: "モールス信号で暗号化/復号化する入力を入力",
+								ru: "Введите текст для шифрования/дешифрования азбукой Морзе",
+								"es-ES":
+									"Ingresa tu entrada para encriptar/desencriptar en morse"
+							},
+
+							required: true,
+
+							permission: null
+						}
+					],
+
+					permission: null
+				}
+			],
+
+			type: ApplicationCommandOptionType.SubcommandGroup,
+			permission: null
+		},
+		{
+			name: "random",
+			name_localizations: {
+				fr: "hasard",
+				ja: "random",
+				ru: "random",
+				"es-ES": "random"
+			},
+
+			description: "Fun slash related to luck (chance)",
+			description_localizations: {
+				fr: "Commande liée au hasard",
+				ja: "運（確率）関連のFunコマンド",
+				ru: "Развлекательные команды, связанные с удачей",
+				"es-ES": "Comandos divertidos relacionados con la suerte (azar)"
+			},
+
+			options: [
+				{
+					name: "dice",
+					name_localizations: {
+						fr: "dé",
+						ja: "dice",
+						ru: "dice",
+						"es-ES": "dice"
+					},
+
+					description: "Make a dice roll",
+					description_localizations: {
+						fr: "Lance un ou plusieurs dés",
+						ja: "サイコロを振る",
+						ru: "Бросить кости",
+						"es-ES": "Hacer una tirada de dado"
+					},
+
+					aliases: ["dé"],
+
+					options: [
+						{
+							name: "number",
+							name_localizations: {
+								fr: "nombre",
+								ja: "number",
+								ru: "number",
+								"es-ES": "number"
+							},
+
+							description: "Number of dice to roll",
+							description_localizations: {
+								fr: "Nombre de dés à lancer",
+								ja: "振るサイコロの数",
+								ru: "Количество костей",
+								"es-ES": "Número de dados a lanzar"
+							},
+
+							choices: to(7),
+
+							type: ApplicationCommandOptionType.Number,
+							permission: null
+						},
+						{
+							name: "faces",
+							name_localizations: {
+								fr: "faces",
+								ja: "faces",
+								ru: "faces",
+								"es-ES": "faces"
+							},
+
+							description: "Number of faces on the dice",
+							description_localizations: {
+								fr: "Nombre de faces sur le(s) dé(s)",
+								ja: "サイコロの面の数",
+								ru: "Количество граней кости",
+								"es-ES": "Número de caras del dado"
+							},
+
+							choices: to(12),
+
+							type: ApplicationCommandOptionType.Number,
+							permission: null
+						}
+					],
+
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				},
+				{
+					name: "heads-tails",
+					name_localizations: {
+						fr: "pile-ou-face",
+						ja: "heads-tails",
+						ru: "heads-tails",
+						"es-ES": "heads-tails"
+					},
+
+					description: "Heads or tail?",
+					description_localizations: {
+						fr: "Pile ou face ?",
+						ja: "表か裏か？",
+						ru: "Орел или решка?",
+						"es-ES": "Cara o cruz?"
+					},
+
+					aliases: ["pileouface", "pile-ou-face"],
+
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				},
+				{
+					name: "number",
+					name_localizations: {
+						fr: "nombre",
+						ja: "number",
+						ru: "number",
+						"es-ES": "number"
+					},
+
+					description: "Generate a random number between two values",
+					description_localizations: {
+						fr: "Génère un nombre aléatoire entre deux valeurs",
+						ja: "2つの値の間のランダムな数字を生成",
+						ru: "Сгенерировать случайное число между двумя значениями",
+						"es-ES": "Generar un número aleatorio entre dos valores"
+					},
+
+					options: [
+						{
+							name: "min",
+							name_localizations: {
+								fr: "minimum",
+								ja: "min",
+								ru: "min",
+								"es-ES": "min"
+							},
+
+							description: "Minimum value",
+							description_localizations: {
+								fr: "Valeur minimale",
+								ja: "最小値",
+								ru: "Минимальное значение",
+								"es-ES": "Valor mínimo"
+							},
+							type: ApplicationCommandOptionType.Number,
+
+							required: false,
+							permission: null
+						},
+						{
+							name: "max",
+							name_localizations: {
+								fr: "maximum",
+								ja: "max",
+								ru: "max",
+								"es-ES": "max"
+							},
+
+							description: "Maximum value",
+							description_localizations: {
+								fr: "Valeur maximale",
+								ja: "最大値",
+								ru: "Максимальное значение",
+								"es-ES": "Valor máximo"
+							},
+
+							type: ApplicationCommandOptionType.Number,
+
+							required: false,
+							permission: null
+						}
+					],
+
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				},
+				{
+					name: "gay",
+
+					description: "Show how gay you are",
+					description_localizations: {
+						fr: "Affiche au combien tu es gay",
+						ja: "あなたのゲイ度を表示",
+						ru: "Показать, насколько вы гей",
+						"es-ES": "Mostrar qué tan gay eres"
+					},
+
+					options: [
+						{
+							name: "user",
+
+							description: "the user",
+							description_localizations: {
+								fr: "l'user",
+								ja: "ユーザー",
+								ru: "пользователь",
+								"es-ES": "el usuario"
+							},
+
+							type: ApplicationCommandOptionType.User,
+							required: false,
+							permission: null
+						}
+					],
+					thinking: false,
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				},
+				{
+					name: "rate",
+
+					description: "Let me rate the followed subject",
+					description_localizations: {
+						fr: "Affiche au combien tu pue",
+						ja: "指定された対象を評価します",
+						ru: "Позволь оценить указанный предмет",
+						"es-ES": "Déjame calificar el tema indicado"
+					},
+
+					aliases: ["note"],
+
+					options: [
+						{
+							name: "the_things",
+
+							description: "the_things",
+							description_localizations: {
+								fr: "la chose",
+								ja: "もの",
+								ru: "вещи",
+								"es-ES": "las cosas"
+							},
+
+							type: ApplicationCommandOptionType.String,
+							required: true,
+							permission: null
+						}
+					],
+					thinking: false,
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				},
+				{
+					name: "trans",
+
+					description: "Show how trans you are",
+					description_localizations: {
+						fr: "Affiche au combien tu es trans",
+						ja: "あなたのトランス度を表示",
+						ru: "Показать, насколько вы транс",
+						"es-ES": "Mostrar qué tan trans eres"
+					},
+
+					options: [
+						{
+							name: "user",
+
+							description: "the user",
+							description_localizations: {
+								fr: "l'user",
+								ja: "ユーザー",
+								ru: "пользователь",
+								"es-ES": "el usuario"
+							},
+
+							type: ApplicationCommandOptionType.User,
+							required: false,
+							permission: null
+						}
+					],
+					thinking: false,
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				},
+				{
+					name: "stench",
+
+					description: "Show how much stench you are",
+					description_localizations: {
+						fr: "Affiche au combien tu pue",
+						ja: "あなたの臭さ度を表示",
+						ru: "Показать, насколько вы вонючий",
+						"es-ES": "Mostrar qué tan apestoso eres"
+					},
+
+					aliases: [
+						"odeur",
+						"odeurs",
+						"puanteurs",
+						"puanteur",
+						"arf",
+						"pue"
+					],
+
+					options: [
+						{
+							name: "user",
+
+							description: "the user",
+							description_localizations: {
+								fr: "l'user",
+								ja: "ユーザー",
+								ru: "пользователь",
+								"es-ES": "el usuario"
+							},
+
+							type: ApplicationCommandOptionType.User,
+							required: false,
+							permission: null
+						}
+					],
+					thinking: false,
+					type: ApplicationCommandOptionType.Subcommand,
+					permission: null
+				}
+			],
+
+			type: ApplicationCommandOptionType.SubcommandGroup,
+			permission: null
+		},
+		{
+			name: "config",
+			prefixName: "fconfig",
+
+			description: "Disable the fun category",
+			description_localizations: {
+				fr: "Désactiver la catégorie fun",
+				ja: "Funカテゴリを無効化",
+				ru: "Отключить категорию развлечений",
+				"es-ES": "Deshabilitar la categoría de diversión"
+			},
+
+			options: [
+				{
+					name: "action",
+
+					description: "What do you want to do?",
+					description_localizations: {
+						fr: "Que voulez-vous faire ?",
+						ja: "何をしたいですか？",
+						ru: "Что вы хотите сделать?",
+						"es-ES": "Que quieres hacer?"
+					},
+
+					choices: [
+						{
+							name: "Power On",
+							name_localizations: {
+								fr: "Activer",
+								ja: "power_on",
+								ru: "power_on",
+								"es-ES": "power_on"
+							},
+							value: "on"
+						},
+						{
+							name: "Power Off",
+							name_localizations: {
+								fr: "Désactiver",
+								ja: "power_off",
+								ru: "power_off",
+								"es-ES": "power_off"
+							},
+							value: "off"
+						}
+					],
+
+					required: true,
+					type: ApplicationCommandOptionType.String,
+
+					permission: null
+				}
+			],
+
+			type: ApplicationCommandOptionType.Subcommand,
+			permission: PermissionFlagsBits.Administrator
+		}
+	],
+	integration_types: [0, 1],
+	contexts: [0, 1, 2],
+
+	thinking: true,
+	category: "fun",
+	type: ApplicationCommandType.ChatInput,
+	permission: null
+};

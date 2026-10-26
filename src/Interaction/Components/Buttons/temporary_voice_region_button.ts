@@ -1,0 +1,164 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	ActionRowBuilder,
+	ButtonInteraction,
+	ComponentType,
+	EmbedBuilder,
+	GuildMember,
+	StringSelectMenuBuilder,
+	StringSelectMenuOptionBuilder
+} from "discord.js";
+import { tempTable } from "../../../Events/client/ready.ts";
+
+export default async function (interaction: ButtonInteraction<"cached">) {
+	const result = await interaction.client.db.get(
+		`${interaction.guildId}.VOICE_INTERFACE.interface`
+	);
+	const lang = await interaction.client.func.getLanguageData(
+		interaction.guildId
+	);
+	const member = interaction.member as GuildMember;
+
+	const targetedChannel = (interaction.member as GuildMember).voice.channel;
+	const getChannelOwner = await tempTable.get(
+		`CUSTOM_VOICE.${interaction.guildId}.${interaction.user?.id}`
+	);
+
+	if (!getChannelOwner) return await interaction.deferUpdate();
+	if (
+		getChannelOwner !== targetedChannel?.id ||
+		(interaction.channelId !== targetedChannel?.id &&
+			interaction.channelId !== result?.channelId)
+	)
+		return await interaction.deferUpdate();
+
+	if (!member.voice.channel) {
+		await interaction.deferUpdate();
+		return;
+	} else {
+		const comp = new StringSelectMenuBuilder()
+			.setCustomId("starter")
+			.setPlaceholder(lang.temporary_voice_region_menu_placeholder)
+			.addOptions(
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Singapore")
+					.setValue("singapore"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Australia/Sydney")
+					.setValue("sydney"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Russia")
+					.setValue("russia"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("India")
+					.setValue("india"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Hong Kong")
+					.setValue("hongkong"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("South Africa")
+					.setValue("southafrica"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Netherland/Rotterdam")
+					.setValue("rotterdam"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Japan/Tokyo")
+					.setValue("japan"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("South Korea")
+					.setValue("south-korea"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("US/East")
+					.setValue("us-east"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("US/South")
+					.setValue("us-south"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("US/West")
+					.setValue("us-west"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("US/Central")
+					.setValue("us-central"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Brazil")
+					.setValue("brazil")
+			);
+
+		const response = await interaction.reply({
+			flags: [1 << 6],
+			components: [
+				new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+					comp
+				)
+			]
+		});
+
+		const collector = interaction.channel?.createMessageComponentCollector({
+			componentType: ComponentType.StringSelect,
+			filter: (u) => u.user.id === interaction.user.id,
+			time: 200_000
+		});
+
+		collector?.on("collect", async (i) => {
+			const channel = (i.member as GuildMember).voice.channel;
+			const value = i.values[0];
+
+			await channel?.setRTCRegion(value);
+
+			await i.reply({
+				embeds: [
+					new EmbedBuilder()
+						.setDescription(lang.temporary_voice_title_embec)
+						.setColor(2829617)
+						.setFields({
+							name: lang.temporary_voice_new_region,
+							value: `${i.client.iHorizon_Emojis.VC_Region} **${value}**`,
+							inline: true
+						})
+						.setImage(
+							await client.func.bannerGenerator(
+								interaction.guildId
+							)
+						)
+						.setFooter(
+							await interaction.client.func.displayBotName.footerBuilder(
+								interaction.guildId!
+							)
+						)
+				],
+				files: [
+					await interaction.client.func.displayBotName.footerAttachmentBuilder(
+						interaction
+					)
+				],
+				flags: [1 << 6]
+			});
+
+			collector?.stop();
+		});
+
+		collector?.on("end", (i) => {
+			response.delete();
+		});
+	}
+}

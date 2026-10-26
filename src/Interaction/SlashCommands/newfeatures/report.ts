@@ -1,0 +1,133 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	Client,
+	EmbedBuilder,
+	ApplicationCommandOptionType,
+	ChatInputCommandInteraction,
+	ApplicationCommandType
+} from "discord.js";
+
+import { LanguageData } from "../../../../types/languageData.js";
+import { Command } from "../../../../types/command.js";
+
+export const command: Command = {
+	name: "report",
+
+	description: "Report a bug, error, spell error to the iHorizon's dev!",
+	description_localizations: {
+		fr: "Signaler un bug, une erreur, une faute d'orthographe au développeur d'iHorizon",
+		ja: "バグ、エラー、スペルミスをiHorizonの開発者に報告！",
+		ru: "Сообщить об ошибке разработчикам iHorizon!",
+		"es-ES":
+			"Reportar un bug, error o falta de ortografía a los desarrolladores de iHorizon!"
+	},
+
+	options: [
+		{
+			name: "message-to-dev",
+			type: ApplicationCommandOptionType.String,
+
+			description: "What is the problem? Please make a good sentences",
+			description_localizations: {
+				fr: "Quelle est le problème? S'il vous plaît expliquer le problème.",
+				ja: "問題は何ですか？良い文章で説明してください",
+				ru: "В чем проблема? Пожалуйста, составьте хорошее предложение",
+				"es-ES": "Cual es el problema? Por favor, haz una buena oración"
+			},
+
+			required: true,
+
+			permission: null
+		}
+	],
+	thinking: true,
+	category: "newfeatures",
+	type: ApplicationCommandType.ChatInput,
+	permission: null,
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached">,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		// Guard's Typing
+		if (
+			!interaction.member ||
+			!client.user ||
+			!interaction.user ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		const sentences = interaction.options.getString("message-to-dev");
+		const timeout = 18000000;
+		const cooldown = await client.db.get(
+			`${interaction.guildId}.USER.${interaction.user.id}.REPORT.cooldown`
+		);
+
+		if (cooldown !== null && timeout - (Date.now() - cooldown) > 0) {
+			const time = client.timeCalculator.to_beautiful_string(
+				timeout - (Date.now() - cooldown),
+				lang
+			);
+
+			await interaction.editReply({
+				content: lang.report_cooldown_command.replace("${time}", time)
+			});
+			return;
+		} else {
+			if (interaction.guild.ownerId != interaction.user.id) {
+				await interaction.editReply({
+					content: lang.report_owner_need
+				});
+				return;
+			}
+
+			if (sentences && sentences.split(" ").length < 8) {
+				await interaction.editReply({ content: lang.report_specify });
+				return;
+			}
+
+			interaction.editReply({ content: lang.report_command_work });
+			const embed = new EmbedBuilder()
+				.setColor("#ff0000")
+				.setDescription(
+					`**${interaction.user.globalName || interaction.user.username}** (<@${interaction.user.id}>) reported:\n~~--------------------------------~~\n${sentences}\n~~--------------------------------~~\nServer ID: **${interaction.guild.id}**`
+				);
+
+			await client.func.method.channelSend(
+				client.config.core.reportChannelID,
+				{
+					embeds: [embed]
+				}
+			);
+
+			await client.db.set(
+				`${interaction.guild.id}.USER.${interaction.user.id}.REPORT.cooldown`,
+				Date.now()
+			);
+			return;
+		}
+	}
+};

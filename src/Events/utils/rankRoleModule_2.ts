@@ -1,0 +1,65 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import { Client, User } from "discord.js";
+import { BotEvent } from "../../../types/event.js";
+
+export const event: BotEvent = {
+	name: "userUpdate",
+	run: async (client: Client, oldUser: User, newUser: User) => {
+		if (
+			oldUser.username !== newUser.username ||
+			oldUser.globalName !== newUser.globalName
+		) {
+			const guilds = client.guilds.cache
+				.filter((guild) => guild.members.cache.has(newUser.id))
+				.toJSON();
+			guilds.forEach(async (guild) => {
+				const guildData = await client.db.get(
+					`${guild.id}.GUILD.RANK_ROLES`
+				);
+				if (guildData?.roles && guildData?.nicknames) {
+					const nicknames = guildData.nicknames;
+					const rankRoles = guildData.roles;
+
+					const member = guild.members.cache.get(newUser.id);
+					if (!member) return;
+
+					const includeUsername =
+						newUser.username.includes(nicknames);
+					const includeGlobalname = newUser.globalName
+						? newUser.globalName.includes(nicknames)
+						: false;
+
+					if (!includeUsername && !includeGlobalname) {
+						if (member.roles.cache.has(rankRoles)) {
+							member.roles.remove(rankRoles, "[Rank] Module");
+						}
+					} else if (includeUsername || includeGlobalname) {
+						if (!member.roles.cache.has(rankRoles)) {
+							member.roles.add(rankRoles, "[Rank] Module");
+						}
+					}
+				} else return;
+			});
+		}
+	}
+};

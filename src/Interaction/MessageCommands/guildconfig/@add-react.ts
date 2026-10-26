@@ -1,0 +1,93 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import { Client, Message, PermissionsBitField } from "discord.js";
+
+import {
+	isDiscordEmoji,
+	isSingleEmoji
+} from "../../../core/functions/emojiChecker.js";
+import { LanguageData } from "../../../../types/languageData.js";
+import { Command } from "../../../../types/command.js";
+
+export const command: Command = {
+	name: "add-react",
+	aliases: ["react-add", "addreact", "reactadd"],
+
+	description: "Add reaction by iHorizon when user send message",
+	description_localizations: {
+		fr: "Ajouter une réaction d'iHorizon lorsque l'utilisateur envoie un message spécifiqe",
+		ja: "ユーザーがメッセージを送信したらiHorizonがリアクションを追加",
+		ru: "Добавить реакцию iHorizon при отправке сообщения",
+		"es-ES":
+			"Añadir reacción de iHorizon cuando el usuario envía un mensaje"
+	},
+
+	thinking: false,
+	category: "guildconfig",
+	type: "PREFIX_IHORIZON_COMMAND",
+	permission: PermissionsBitField.Flags.ManageGuildExpressions,
+	run: async (
+		client: Client,
+		interaction: Message<true>,
+		lang: LanguageData,
+		options?: string[]
+	) => {
+		const emoji = options![0];
+
+		const emojiMsg = emoji || lang.var_none;
+
+		if (!isSingleEmoji(emoji) && !isDiscordEmoji(emoji)) {
+			await interaction.reply({
+				content: lang.add_react_command_err_emojis.replace(
+					"{emoji}",
+					emojiMsg
+				),
+				allowedMentions: { repliedUser: false }
+			});
+			return;
+		}
+
+		const message = options![1];
+
+		if (!message?.trim()) {
+			await interaction.reply({
+				content: lang.add_react_command_err_message,
+				allowedMentions: { repliedUser: false }
+			});
+			return;
+		}
+
+		await interaction.reply({
+			content: lang.add_react_command_work
+				.replace("${interaction.member?.id}", interaction.member?.id!)
+				.replace("{emoji}", emojiMsg)
+				.replace("${message.toLowerCase()}", message.toLowerCase()),
+			allowedMentions: { repliedUser: false }
+		});
+
+		await client.db.set(
+			`${interaction.guildId}.GUILD.REACT_MSG.${message.toLowerCase()}`,
+			emoji
+		);
+		return;
+	}
+};

@@ -1,0 +1,234 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	Client,
+	ApplicationCommandOptionType,
+	ChatInputCommandInteraction,
+	ApplicationCommandType,
+	PermissionFlagsBits
+} from "discord.js";
+
+import { LanguageData } from "../../../../types/languageData.js";
+import { Command } from "../../../../types/command.js";
+
+export const command: Command = {
+	name: "punishpub",
+
+	description: "Punish user when he send too much advertisement!",
+	description_localizations: {
+		fr: "Punir l'utilisateur lorsqu'il envoie trop de publicité",
+		ja: "広告を送りすぎたユーザーを罰する！",
+		ru: "Наказать пользователя за чрезмерную рекламу!",
+		"es-ES": "Castigar al usuario cuando envía demasiada publicidad!"
+	},
+
+	options: [
+		{
+			name: "status",
+			type: ApplicationCommandOptionType.String,
+
+			description: "Choose the status of the module",
+			description_localizations: {
+				fr: "Choisir l'état du module",
+				ja: "モジュールのステータスを選択",
+				ru: "Выберите статус модуля",
+				"es-ES": "Elegir el estado del módulo"
+			},
+
+			required: true,
+			choices: [
+				{
+					name: "ON",
+					name_localizations: {
+						fr: "Activer",
+						ja: "on",
+						ru: "on",
+						"es-ES": "on"
+					},
+					value: "true"
+				},
+				{
+					name: "OFF",
+					name_localizations: {
+						fr: "Désactiver",
+						ja: "off",
+						ru: "off",
+						"es-ES": "off"
+					},
+					value: "false"
+				}
+			],
+
+			permission: null
+		},
+		{
+			name: "amount",
+			type: ApplicationCommandOptionType.Number,
+
+			description: "The max amount of flags before punishement",
+			description_localizations: {
+				fr: "Le nombre maximum de flags avant la punition",
+				ja: "罰前の最大フラグ数",
+				ru: "Максимальное количество флагов до наказания",
+				"es-ES": "La cantidad máxima de marcas antes del castigo"
+			},
+
+			required: false,
+			permission: null
+		},
+		{
+			name: "punishement",
+			type: ApplicationCommandOptionType.String,
+
+			description: "Choose the punishement",
+			description_localizations: {
+				fr: "Choisir la punition",
+				ja: "罰を選択",
+				ru: "Выберите наказание",
+				"es-ES": "Elegir el castigo"
+			},
+
+			required: false,
+			choices: [
+				{
+					name: "BAN",
+					name_localizations: {
+						fr: "Bannir",
+						ja: "ban",
+						ru: "ban",
+						"es-ES": "ban"
+					},
+					value: "ban"
+				},
+				{
+					name: "KICK",
+					name_localizations: {
+						fr: "Expulser",
+						ja: "kick",
+						ru: "kick",
+						"es-ES": "kick"
+					},
+					value: "kick"
+				},
+				{
+					name: "MUTE",
+					name_localizations: {
+						fr: "Muter",
+						ja: "mute",
+						ru: "mute",
+						"es-ES": "mute"
+					},
+					value: "mute"
+				}
+			],
+			permission: null
+		}
+	],
+	thinking: false,
+	permission: PermissionFlagsBits.Administrator,
+	category: "newfeatures",
+	type: ApplicationCommandType.ChatInput,
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached">,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		// Guard's Typing
+		if (
+			!interaction.member ||
+			!client.user ||
+			!interaction.user ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		const action = interaction.options.getString("status");
+		const amount = interaction.options.getNumber("amount");
+		const punishment = interaction.options.getString("punishement");
+
+		if (amount && action == "true") {
+			if (amount > 50) {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.punishpub_too_hight_enable
+				});
+				return;
+			}
+			if (amount < 0) {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.punishpub_negative_number_enable
+				});
+				return;
+			}
+			if (amount == 0) {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.punishpub_zero_number_enable
+				});
+				return;
+			}
+
+			await client.db.set(
+				`${interaction.guildId}.GUILD.PUNISH.PUNISH_PUB`,
+				{
+					amountMax: amount - 1,
+					punishementType: punishment,
+					state: action
+				}
+			);
+
+			await client.func.ihorizon_logs(interaction, {
+				title: lang.punishpub_logs_embed_title,
+				description: lang.punishpub_logs_embed_description
+					.replace("${interaction.user.id}", interaction.user.id)
+					.replace("${amount}", amount.toString())
+					.replace("${punishement}", punishment?.toString()!)
+			});
+
+			await client.func.method.interactionSend(interaction, {
+				content: lang.punishpub_confirmation_message_enable
+					.replace("${interaction.user.id}", interaction.user.id)
+					.replace("${amount}", amount.toString())
+					.replace("${punishement}", punishment!)
+			});
+			return;
+		} else {
+			await client.db.delete(
+				`${interaction.guildId}.GUILD.PUNISH.PUNISH_PUB`
+			);
+			await client.func.method.interactionSend(interaction, {
+				content: lang.punishpub_confirmation_disable
+			});
+
+			await client.func.ihorizon_logs(interaction, {
+				title: lang.punishpub_logs_embed_title_disable,
+				description:
+					lang.punishpub_logs_embed_description_disable.replace(
+						"${interaction.user.id}",
+						interaction.user.id
+					)
+			});
+
+			return;
+		}
+	}
+};

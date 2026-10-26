@@ -1,0 +1,203 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	BaseGuildTextChannel,
+	ChatInputCommandInteraction,
+	Client,
+	Collection,
+	Message,
+	MessageResolvable,
+	Snowflake
+} from "discord.js";
+
+import { LanguageData } from "../../../../types/languageData.js";
+
+import { SubCommand } from "../../../../types/command.js";
+
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+const MAX_SCANNED_MESSAGES = 1000;
+const FETCH_DELAY_MS = 350; // small buffer to stay clear of the messages.fetch rate limit
+
+function keepBulkDeletable(messages: readonly Message[]): Message[] {
+	const twoWeeksAgo = Date.now() - TWO_WEEKS_MS;
+	return messages.filter((m) => m.createdTimestamp > twoWeeksAgo);
+}
+
+export async function afterSent(
+	sent: Message,
+	interaction: ChatInputCommandInteraction<"cached"> | Message
+): Promise<void> {
+	if (sent.deletable) await sent.delete().catch(() => null);
+	if (interaction instanceof Message && interaction.deletable) {
+		await interaction.delete().catch(() => null);
+	}
+}
+
+export async function clearMessage(
+	body:
+		Collection<Snowflake, Message> | readonly MessageResolvable[] | number,
+	interaction: ChatInputCommandInteraction<"cached"> | Message,
+	lang: LanguageData
+): Promise<void> {
+	try {
+		let filteredBody = body;
+		if (body instanceof Collection) {
+			filteredBody = body.filter(
+				(m) => keepBulkDeletable([m]).length > 0
+			);
+		}
+
+		const messages = await (
+			interaction.channel as BaseGuildTextChannel
+		).bulkDelete(filteredBody, true);
+
+		const sent = await client.func.method.channelSend(interaction, {
+			content: lang.clear_confirmation_message.replace(
+				"${messages.size}",
+				messages.size.toString()
+			)
+		});
+
+		setTimeout(() => afterSent(sent, interaction), 5000);
+
+		await client.func.ihorizon_logs(interaction, {
+			title: lang.clear_logs_embed_title,
+			description: lang.clear_logs_embed_description
+				.replace(
+					"${interaction.user.id}",
+					String(interaction.member?.user.id)
+				)
+				.replace("${messages.size}", messages.size.toString())
+				.replace(
+					"${interaction.channel.id}",
+					String(interaction.channel?.id)
+				)
+		});
+	} catch (error) {
+		console.error("[clear] bulkDelete failed:", error);
+		await client.func.method.interactionSend(interaction, {
+			content: `${error?.message}`
+		});
+	}
+}
+
+async function findMessagesByAuthor(
+	channel: BaseGuildTextChannel,
+	authorId: Snowflake,
+	targetAmount: number
+): Promise<{ matched: Message[]; scanned: number }> {
+	const matched: Message[] = [];
+	let scanned = 0;
+	let lastMessageId: string | undefined;
+
+	const chunks = Math.ceil(MAX_SCANNED_MESSAGES / 100);
+
+	for (let i = 0; i < chunks && matched.length < targetAmount; i++) {
+		const fetchedMessages = await channel.messages.fetch({
+			limit: 100,
+			before: lastMessageId
+		});
+
+		if (fetchedMessages.size === 0) break;
+
+		scanned += fetchedMessages.size;
+		lastMessageId = fetchedMessages.last()?.id;
+
+		for (const msg of fetchedMessages.values()) {
+			if (msg.author.id !== authorId) continue;
+			matched.push(msg);
+			if (matched.length >= targetAmount) break;
+		}
+
+		const isLastIteration =
+			i === chunks - 1 || matched.length >= targetAmount;
+		if (!isLastIteration) await Bun.sleep(FETCH_DELAY_MS);
+	}
+
+	return { matched, scanned };
+}
+
+export const subCommand: SubCommand = {
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached"> | Message,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		// Guard's Typing
+		if (
+			!client.user ||
+			!interaction.member ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		const amount =
+			interaction instanceof ChatInputCommandInteraction
+				? interaction.options.getNumber("number", true) + 1
+				: client.func.method.number(args!, 0) + 1;
+
+		const member =
+			interaction instanceof ChatInputCommandInteraction
+				? interaction.options.getMember("member")
+				: client.func.method.member(interaction, args!, 1);
+
+		const channel = interaction.channel as BaseGuildTextChannel;
+
+		if (member) {
+			const targetAmount = Math.max(amount, 1);
+
+			const { matched, scanned } = await findMessagesByAuthor(
+				channel,
+				member.id,
+				targetAmount
+			);
+
+			console.debug(
+				`[clear] scanned ${scanned} message(s) to find ${matched.length}/${targetAmount} from ${member.id}`
+			);
+
+			if (matched.length === 0) {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.clear_command_no_message
+				});
+				return;
+			}
+
+			const deletable = keepBulkDeletable(matched.slice(0, targetAmount));
+
+			if (deletable.length === 0) {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.clear_command_no_message
+				});
+				return;
+			}
+
+			await clearMessage(deletable, interaction, lang);
+			return;
+		} else {
+			await clearMessage(Math.min(amount, 100), interaction, lang);
+			return;
+		}
+	}
+};

@@ -1,0 +1,289 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	Client,
+	EmbedBuilder,
+	ApplicationCommandOptionType,
+	ButtonBuilder,
+	ButtonStyle,
+	ActionRowBuilder,
+	ChatInputCommandInteraction,
+	GuildMember,
+	ApplicationCommandType,
+	Message
+} from "discord.js";
+
+import { format } from "../../../core/functions/date_and_time.js";
+
+import { LanguageData } from "../../../../types/languageData.js";
+import { Command } from "../../../../types/command.js";
+import { blacklistTable } from "../../../Events/client/ready.js";
+
+export const command: Command = {
+	name: "bledit",
+
+	description: "edit blacklist reason",
+	description_localizations: {
+		fr: "modifier la raison d'un blacklist",
+		ja: "ブラックリスト理由を編集",
+		ru: "изменить причину черного списка",
+		"es-ES": "editar razón de lista negra"
+	},
+
+	options: [
+		{
+			name: "user",
+			type: ApplicationCommandOptionType.User,
+
+			description: "The user you want to edit the reason",
+			description_localizations: {
+				fr: "L'utilisateur que vous souhaitez modifier la raison de sont blacklist",
+				ja: "理由を編集したいユーザー",
+				ru: "Пользователь, для которого нужно изменить причину",
+				"es-ES": "El usuario del que quieres editar la razón"
+			},
+
+			required: true,
+
+			permission: null
+		},
+		{
+			name: "new_reason",
+			type: ApplicationCommandOptionType.String,
+
+			description: "the new reason",
+			description_localizations: {
+				fr: "la nouvelle raison",
+				ja: "新しい理由",
+				ru: "новая причина",
+				"es-ES": "la nueva razón"
+			},
+
+			permission: null,
+			required: true
+		}
+	],
+
+	aliases: ["blacklistedit", "editbl"],
+
+	thinking: false,
+	category: "owner",
+	type: ApplicationCommandType.ChatInput,
+	permission: null,
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached"> | Message,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		if (
+			await client.func.ownerHelper.isBotOwner(
+				interaction.member?.user.id!
+			)
+		) {
+			run_for_bot_owner(client, interaction, lang, args);
+		} else if (
+			await client.func.ownerHelper.isGuildOwner(
+				interaction.member?.user.id!,
+				interaction.guild!
+			)
+		) {
+			run_for_guild_owner(client, interaction, lang, args);
+		}
+	}
+};
+
+export async function run_for_bot_owner(
+	client: Client,
+	interaction: ChatInputCommandInteraction<"cached"> | Message,
+	lang: LanguageData,
+	args?: string[]
+) {
+	// Guard's Typing
+	if (
+		!client.user ||
+		!interaction.member ||
+		!interaction.guild ||
+		!interaction.channel
+	)
+		return;
+
+	if (interaction instanceof ChatInputCommandInteraction) {
+		var user = interaction.options.getUser("user", true);
+		var newReason =
+			"iHorizon Project Blacklist - " +
+			interaction.options.getString("new_reason", true);
+	} else {
+		var user = (await client.func.method.user(interaction, args!, 0))!;
+		var newReason =
+			"iHorizon Project Blacklist - " +
+			client.func.method.longString(args!, 1)!;
+	}
+
+	if (!client.func.ownerHelper.isBotOwner(interaction.member.user.id)) {
+		await client.func.method.interactionSend(interaction, {
+			content: lang.unblacklist_not_blacklisted.replace(
+				"${member.id}",
+				user.id
+			)
+		});
+		return;
+	}
+
+	if (client.func.ownerHelper.isBotDev(user.id)) {
+		await client.func.method.interactionSend(interaction, {
+			content: lang.unblacklist_not_blacklisted.replace(
+				"${member.id}",
+				user.id
+			)
+		});
+		return;
+	}
+
+	const userObj = await blacklistTable.get(user.id);
+
+	await blacklistTable.set(`${user.id}.reason`, newReason);
+
+	if (!userObj) {
+		await client.func.method.interactionSend(interaction, {
+			content: lang.unblacklist_not_blacklisted.replace(
+				"${member.id}",
+				user.id
+			)
+		});
+		return;
+	}
+
+	await client.func.method.interactionSend(interaction, {
+		embeds: [
+			new EmbedBuilder()
+				.setColor("#2E2EFE")
+				.setDescription(
+					`<@${user.id}> (${user.username})\n├─ ${userObj.createdAt !== undefined ? format(new Date(userObj.createdAt), "MMM DD YYYY") : lang.profil_unknown}\n├─ \`${newReason || lang.blacklist_var_no_reason}\`\n├─ By ${userObj.owner || lang.profil_unknown}`
+				)
+				.setFooter(
+					await client.func.displayBotName.footerBuilder(
+						interaction.guildId!
+					)
+				)
+				.setTimestamp()
+		],
+		files: [
+			await client.func.displayBotName.footerAttachmentBuilder(
+				interaction
+			)
+		]
+	});
+}
+
+export async function run_for_guild_owner(
+	client: Client,
+	interaction: ChatInputCommandInteraction<"cached"> | Message,
+	lang: LanguageData,
+	args?: string[]
+) {
+	// Guard's Typing
+	if (
+		!client.user ||
+		!interaction.member ||
+		!interaction.guild ||
+		!interaction.channel
+	)
+		return;
+
+	if (interaction instanceof ChatInputCommandInteraction) {
+		var user = interaction.options.getUser("user", true);
+		var newReason =
+			"iHorizon Project Blacklist - " +
+			interaction.options.getString("new_reason", true);
+	} else {
+		var user = (await client.func.method.user(interaction, args!, 0))!;
+		var newReason =
+			"iHorizon Project Blacklist - " +
+			client.func.method.longString(args!, 1)!;
+	}
+
+	if (
+		!client.func.ownerHelper.isGuildOwner(
+			interaction.member.user.id,
+			interaction.guild
+		)
+	) {
+		await client.func.method.interactionSend(interaction, {
+			content: lang.unblacklist_not_blacklisted.replace(
+				"${member.id}",
+				user.id
+			)
+		});
+		return;
+	}
+
+	if (client.func.ownerHelper.isBotDev(user.id)) {
+		await client.func.method.interactionSend(interaction, {
+			content: lang.unblacklist_not_blacklisted.replace(
+				"${member.id}",
+				user.id
+			)
+		});
+		return;
+	}
+
+	const userObj = await client.db.get(
+		`${interaction.guildId}.BLACKLIST.${user.id}`
+	);
+
+	await client.db.set(
+		`${interaction.guildId}.BLACKLIST.${user.id}.reason`,
+		newReason
+	);
+
+	if (!userObj) {
+		await client.func.method.interactionSend(interaction, {
+			content: lang.unblacklist_not_blacklisted.replace(
+				"${member.id}",
+				user.id
+			)
+		});
+		return;
+	}
+
+	await client.func.method.interactionSend(interaction, {
+		embeds: [
+			new EmbedBuilder()
+				.setColor("#2E2EFE")
+				.setDescription(
+					`<@${user.id}> (${user.username})\n├─ ${userObj.createdAt !== undefined ? format(new Date(userObj.createdAt), "MMM DD YYYY") : lang.profil_unknown}\n├─ \`${newReason || lang.blacklist_var_no_reason}\`\n├─ By ${userObj.owner || lang.profil_unknown}`
+				)
+				.setFooter(
+					await client.func.displayBotName.footerBuilder(
+						interaction.guildId!
+					)
+				)
+				.setTimestamp()
+		],
+		files: [
+			await client.func.displayBotName.footerAttachmentBuilder(
+				interaction
+			)
+		]
+	});
+}

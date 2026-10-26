@@ -1,0 +1,574 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	Client,
+	ApplicationCommandOptionType,
+	ChatInputCommandInteraction,
+	BaseGuildTextChannel,
+	ApplicationCommandType,
+	ChannelType,
+	PermissionFlagsBits,
+	Message,
+	Channel,
+	CategoryChannel
+} from "discord.js";
+
+import { Command } from "../../../../types/command.js";
+import logger from "../../../core/logger.js";
+import { LanguageData } from "../../../../types/languageData.js";
+
+export const command: Command = {
+	name: "setlogs",
+
+	description: "Set a logs channel for Audits Logs!",
+	description_localizations: {
+		fr: "Définir des canaux de journaux pour les journaux d'audit",
+		ja: "監査ログ用のログチャンネルを設定！",
+		ru: "Установить канал для аудита!",
+		"es-ES":
+			"Establecer un canal de registros para los registros de auditoría!"
+	},
+
+	aliases: ["logs", "setlog"],
+
+	options: [
+		{
+			name: "type",
+			type: ApplicationCommandOptionType.String,
+			description: "Specified logs category",
+			description_localizations: {
+				fr: "Spécifier le canal de journaux",
+				ja: "指定されたログカテゴリ",
+				ru: "Указанная категория логов",
+				"es-ES": "Categoría de registros especificada"
+			},
+			required: true,
+			choices: [
+				{
+					name: "Setup all channels",
+					name_localizations: {
+						fr: "Configurer tous les canaux",
+						ja: "setup_all_channels",
+						ru: "setup_all_channels",
+						"es-ES": "setup_all_channels"
+					},
+					value: "auto"
+				},
+				{
+					name: "Delete all settings",
+					name_localizations: {
+						fr: "Supprimer toutes les configurations",
+						ja: "delete_all_settings",
+						ru: "delete_all_settings",
+						"es-ES": "delete_all_settings"
+					},
+					value: "off"
+				},
+				{
+					name: "AntiSpam Logs",
+					name_localizations: {
+						fr: "Logs AntiSpam",
+						ja: "antispam_logs",
+						ru: "antispam_logs",
+						"es-ES": "antispam_logs"
+					},
+					value: "antispam"
+				},
+				{
+					name: "Boost Logs",
+					name_localizations: {
+						fr: "Logs Boost",
+						ja: "boost_logs",
+						ru: "boost_logs",
+						"es-ES": "boost_logs"
+					},
+					value: "boost"
+				},
+				{
+					name: "Channel Logs",
+					name_localizations: {
+						fr: "Logs Canal",
+						ja: "channel_logs",
+						ru: "channel_logs",
+						"es-ES": "channel_logs"
+					},
+					value: "channel"
+				},
+				{
+					name: "Messages Logs",
+					name_localizations: {
+						fr: "Logs Messages",
+						ja: "messages_logs",
+						ru: "messages_logs",
+						"es-ES": "messages_logs"
+					},
+					value: "message"
+				},
+				{
+					name: "Moderation Logs",
+					name_localizations: {
+						fr: "Logs Modération",
+						ja: "moderation_logs",
+						ru: "moderation_logs",
+						"es-ES": "moderation_logs"
+					},
+					value: "moderation"
+				},
+				{
+					name: "Roles Logs",
+					name_localizations: {
+						fr: "Logs Rôles",
+						ja: "roles_logs",
+						ru: "roles_logs",
+						"es-ES": "roles_logs"
+					},
+					value: "roles"
+				},
+				{
+					name: "Ticket Logs",
+					name_localizations: {
+						fr: "Logs Ticket",
+						ja: "ticket_logs",
+						ru: "ticket_logs",
+						"es-ES": "ticket_logs"
+					},
+					value: "ticket"
+				},
+				{
+					name: "Voice Logs",
+					name_localizations: {
+						fr: "Logs Voice",
+						ja: "voice_logs",
+						ru: "voice_logs",
+						"es-ES": "voice_logs"
+					},
+					value: "voice"
+				},
+				{
+					name: "Confession Logs",
+					name_localizations: {
+						fr: "Logs Confession",
+						ja: "confession_logs",
+						ru: "confession_logs",
+						"es-ES": "confession_logs"
+					},
+					value: "confession"
+				},
+				{
+					name: "Economy Logs",
+					name_localizations: {
+						fr: "Logs d'économie",
+						ja: "economy_logs",
+						ru: "economy_logs",
+						"es-ES": "economy_logs"
+					},
+					value: "economy"
+				}
+			],
+
+			permission: null
+		},
+		{
+			name: "channel",
+			type: ApplicationCommandOptionType.Channel,
+			channel_types: [ChannelType.GuildText],
+			description: "The channel you want your logs message!",
+			description_localizations: {
+				fr: "Le canal sur lequel vous souhaitez recevoir votre message de journaux",
+				ja: "ログメッセージを送信したいチャンネル！",
+				ru: "Канал для сообщений логов!",
+				"es-ES": "El canal donde quieres tus mensajes de registro!"
+			},
+			required: false,
+			permission: null
+		}
+	],
+	thinking: true,
+	category: "guildconfig",
+	type: ApplicationCommandType.ChatInput,
+	permission: PermissionFlagsBits.Administrator,
+	run: async (
+		client: Client,
+		interaction: ChatInputCommandInteraction<"cached"> | Message,
+		lang: LanguageData,
+		args?: string[]
+	) => {
+		// Guard's Typing
+		if (
+			!client.user ||
+			!interaction.member ||
+			!interaction.guild ||
+			!interaction.channel
+		)
+			return;
+
+		const allCreatedChannels: string[] = [];
+		const allLogsPossible = [
+			{ id: "voice", value: lang.setlogschannel_var_voice },
+			{ id: "moderation", value: lang.setlogschannel_var_mods },
+			{ id: "message", value: lang.setlogschannel_var_msg },
+			{ id: "boosts", value: lang.setlogschannel_var_boost },
+			{ id: "roles", value: lang.setlogschannel_var_roles },
+			{
+				id: "ticket-log-channel",
+				value: lang.setlogschannel_var_tickets
+			},
+			{ id: "antispam", value: lang.setlogschannel_var_antispam },
+			{ id: "channel", value: lang.setlogschannel_var_channel },
+			{ id: "confession", value: lang.setlogschannel_var_confession },
+			{ id: "economy", value: lang.setlogschannel_var_economy }
+		];
+
+		if (interaction instanceof ChatInputCommandInteraction) {
+			var type = interaction.options.getString("type")!;
+			var channel = interaction.options.getChannel(
+				"channel"
+			) as Channel | null;
+		} else {
+			var type = client.func.method.string(args!, 0)!;
+			var channel = await client.func.method.channel(
+				interaction,
+				args!,
+				1
+			);
+		}
+
+		const createLogsChannel = async (name: string, typeOfLogs: string) => {
+			if (!channel) {
+				await client.func.method.interactionSend(interaction, {
+					content: lang.guildprofil_not_logs_set
+				});
+				return;
+			}
+
+			try {
+				let already = null;
+				if (type === "ticket-log-channel") {
+					already = await client.db.get(
+						`${interaction.guildId}.GUILD.TICKET.logs`
+					);
+				} else {
+					already = await client.db.get(
+						`${interaction.guildId}.GUILD.SERVER_LOGS.${type}`
+					);
+				}
+
+				if (already === channel.id) {
+					await client.func.method.interactionSend(interaction, {
+						content: lang.joinghostping_add_already_set.replace(
+							"${channel}",
+							channel.toString()
+						)
+					});
+					return;
+				}
+
+				if (already === channel.id) {
+					await client.func.method.interactionSend(interaction, {
+						content: lang.joinghostping_add_already_set.replace(
+							"${channel}",
+							channel.toString()
+						)
+					});
+					return;
+				}
+
+				(
+					interaction.guild?.channels.cache.get(
+						channel.id
+					) as BaseGuildTextChannel | null
+				)?.send({
+					content: lang.setlogschannel_confirmation_message
+						.replace(
+							"${client.iHorizon_Emojis.Yes}",
+							client.iHorizon_Emojis.Yes
+						)
+						.replace(
+							"${interaction.user.id}",
+							interaction.member?.user.id!
+						)
+						.replace("${typeOfLogs}", typeOfLogs)
+				});
+
+				if (type === "ticket-log-channel") {
+					await client.db.set(
+						`${interaction.guildId}.GUILD.TICKET.logs`,
+						channel.id
+					);
+				} else {
+					await client.db.set(
+						`${interaction.guildId}.GUILD.SERVER_LOGS.${type}`,
+						channel.id
+					);
+				}
+
+				await client.func.method.interactionSend(interaction, {
+					content: lang.setlogschannel_command_work
+						.replace("${argsid.id}", channel.id)
+						.replace("${typeOfLogs}", typeOfLogs)
+				});
+
+				await client.func.ihorizon_logs(interaction, {
+					title: lang.setlogschannel_logs_embed_title,
+					description:
+						lang.setlogschannel_logs_embed_description_on_enable
+							.replace(
+								/\${interaction\.user\.id}/g,
+								interaction.member?.user.id!
+							)
+							.replace("${argsid.id}", channel.id)
+							.replace("${typeOfLogs}", typeOfLogs)
+				});
+			} catch (e) {
+				logger.err(e);
+				await client.func.method.interactionSend(interaction, {
+					content: lang.setlogschannel_command_error
+				});
+			}
+		};
+
+		if (type === "auto") {
+			if (channel) {
+				for (const logType of allLogsPossible) {
+					if (logType.id === "ticket-log-channel") {
+						await client.db.set(
+							`${interaction.guildId}.GUILD.TICKET.logs`,
+							channel.id
+						);
+					} else {
+						await client.db.set(
+							`${interaction.guildId}.GUILD.SERVER_LOGS.${logType.id}`,
+							channel.id
+						);
+					}
+				}
+				allCreatedChannels.push(channel.id);
+				(
+					interaction.guild.channels.cache.get(
+						channel.id
+					) as BaseGuildTextChannel | null
+				)?.send({
+					content: lang.setlogschannel_confirmation_message
+						.replace(
+							"${client.iHorizon_Emojis.Yes}",
+							client.iHorizon_Emojis.Yes
+						)
+						.replace(
+							"${interaction.user.id}",
+							interaction.member.user.id!
+						)
+						.replace(
+							"${typeOfLogs}",
+							allLogsPossible.map((x) => x.value).join(",")
+						)
+				});
+
+				await client.func.method.interactionSend(interaction, {
+					content: lang.setlogschannel_utils_command_work
+						.replace("${argsid.id}", `<#${channel.id}>`)
+						.replace(
+							"${typeOfLogs}",
+							allLogsPossible.map((x) => x.value).join(", ")
+						)
+				});
+			} else {
+				const existingLogs: Record<string, string> = {};
+				let existingCategory: CategoryChannel | null = null;
+
+				for (const logType of allLogsPossible) {
+					let channelId: string | null = null;
+
+					if (logType.id === "ticket-log-channel") {
+						channelId = await client.db.get(
+							`${interaction.guildId}.GUILD.TICKET.logs`
+						);
+					} else {
+						channelId = await client.db.get(
+							`${interaction.guildId}.GUILD.SERVER_LOGS.${logType.id}`
+						);
+					}
+
+					// Vérifier si le salon existe vraiment dans le serveur
+					if (channelId) {
+						const guildChannel =
+							interaction.guild.channels.cache.get(channelId);
+						if (guildChannel) {
+							existingLogs[logType.id] = channelId;
+							// Récupérer la catégorie parente du premier salon trouvé
+							if (!existingCategory && guildChannel.parent) {
+								existingCategory =
+									guildChannel.parent as CategoryChannel;
+							}
+						}
+					}
+				}
+
+				const missingLogs = allLogsPossible.filter(
+					(logType) => !existingLogs[logType.id]
+				);
+
+				if (missingLogs.length === 0) {
+					await client.func.method.interactionSend(interaction, {
+						content: lang.setlogschannel_all_already_exist
+					});
+					return;
+				}
+
+				if (!existingCategory) {
+					existingCategory = await interaction.guild.channels.create({
+						name: "LOGS",
+						type: ChannelType.GuildCategory,
+						permissionOverwrites: [
+							{
+								id: interaction.guild.roles.everyone.id,
+								deny: [
+									PermissionFlagsBits.ViewChannel,
+									PermissionFlagsBits.SendMessages,
+									PermissionFlagsBits.ReadMessageHistory
+								]
+							}
+						]
+					});
+				}
+
+				if (existingCategory) {
+					for (const logType of missingLogs) {
+						const newChannel =
+							await interaction.guild.channels.create({
+								name: logType.value,
+								parent: existingCategory.id,
+								permissionOverwrites:
+									existingCategory.permissionOverwrites.cache,
+								type: ChannelType.GuildText
+							});
+
+						if (newChannel) {
+							allCreatedChannels.push(newChannel.id);
+
+							(
+								interaction.guild.channels.cache.get(
+									newChannel.id
+								) as BaseGuildTextChannel | null
+							)?.send({
+								content:
+									lang.setlogschannel_confirmation_message
+										.replace(
+											"${client.iHorizon_Emojis.Yes}",
+											client.iHorizon_Emojis.Yes
+										)
+										.replace(
+											"${interaction.user.id}",
+											interaction.member.user.id!
+										)
+										.replace("${typeOfLogs}", logType.value)
+							});
+
+							if (logType.id === "ticket-log-channel") {
+								await client.db.set(
+									`${interaction.guildId}.GUILD.TICKET.logs`,
+									newChannel.id
+								);
+							} else {
+								await client.db.set(
+									`${interaction.guildId}.GUILD.SERVER_LOGS.${logType.id}`,
+									newChannel.id
+								);
+							}
+						}
+					}
+				}
+				if (allCreatedChannels.length > 0) {
+					await client.func.method.interactionSend(interaction, {
+						content: lang.setlogschannel_utils_command_work
+							.replace(
+								"${argsid.id}",
+								allCreatedChannels
+									.map((x) => `<#${x}>`)
+									.join(",")
+							)
+							.replace(
+								"${typeOfLogs}",
+								missingLogs.map((x) => x.value).join(", ")
+							)
+					});
+				}
+			}
+			return;
+		}
+
+		if (type === "off") {
+			try {
+				await client.func.ihorizon_logs(interaction, {
+					title: lang.setlogschannel_logs_embed_title,
+					description:
+						lang.setlogschannel_logs_embed_description_on_off.replace(
+							/\${interaction\.user\.id}/g,
+							interaction.member.user.id!
+						)
+				});
+
+				const checkData = await client.db.get(
+					`${interaction.guildId}.GUILD.SERVER_LOGS`
+				);
+				if (!checkData) {
+					await client.func.method.interactionSend(interaction, {
+						content: lang.setlogschannel_already_deleted
+					});
+					return;
+				}
+
+				await client.db.delete(
+					`${interaction.guildId}.GUILD.SERVER_LOGS`
+				);
+				await client.func.method.interactionSend(interaction, {
+					content: lang.setlogschannel_command_work_on_delete.replace(
+						"${interaction.guild.name}",
+						interaction.guild?.name as string
+					)
+				});
+			} catch (e) {
+				logger.err(e);
+				await client.func.method.interactionSend(interaction, {
+					content: lang.setlogschannel_command_error
+				});
+			}
+			return;
+		}
+
+		const typeOfLogsMap: { [key: string]: string } = {
+			roles: lang.setlogschannel_var_roles,
+			moderation: lang.setlogschannel_var_mods,
+			voice: lang.setlogschannel_var_voice,
+			message: lang.setlogschannel_var_msg,
+			boost: lang.setlogschannel_var_boost,
+			ticket: lang.setlogschannel_var_tickets,
+			antispam: lang.setlogschannel_var_antispam,
+			channel: lang.setlogschannel_var_channel,
+			confession: lang.setlogschannel_var_confession,
+			economy: lang.setlogschannel_var_economy
+		};
+
+		if (type && type in typeOfLogsMap) {
+			await createLogsChannel(type, typeOfLogsMap[type]);
+		}
+	}
+};

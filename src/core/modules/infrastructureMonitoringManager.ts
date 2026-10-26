@@ -1,0 +1,557 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import {
+	AttachmentBuilder,
+	BaseGuildTextChannel,
+	EmbedBuilder,
+	MessageEditOptions,
+	time
+} from "discord.js";
+import net from "node:net";
+import { axios } from "../functions/axios.ts";
+import { metasTable } from "../../Events/client/ready.ts";
+
+interface ResponseResult {
+	up: boolean;
+	latency: number;
+}
+
+interface PingHistoryEntry {
+	timestamp: Date;
+	ping: number;
+}
+
+class InfrastructureMonitoring {
+	private timeout = 5000; // 5 seconds timeout for requests
+	private statusEmbed: EmbedBuilder;
+	private online: string;
+	private down: string;
+	private evaluating: string;
+	private lastResult: Record<string, ResponseResult>;
+
+	private pingHistory: PingHistoryEntry[] = [];
+	private readonly MAX_PING_HISTORY = 60;
+
+	private async HorizonGateway(): Promise<ResponseResult> {
+		const HorizonGatewayURL = client.config.api.HorizonGateway;
+		if (HorizonGatewayURL) {
+			try {
+				const startTime = Date.now();
+				const response = await axios.get(HorizonGatewayURL, {
+					timeout: this.timeout
+				});
+				const latency = Date.now() - startTime;
+
+				return {
+					up: true,
+					latency: latency
+				};
+			} catch (error) {
+				return {
+					up: false,
+					latency: 0
+				};
+			}
+		}
+
+		return {
+			up: false,
+			latency: 0
+		};
+	}
+
+	private async Lavalink(): Promise<ResponseResult> {
+		const Lavalinks =
+			client.config.lavalink.nodes.map((x) => `${x.host}:${x.port}`) ||
+			[];
+		if (Lavalinks.length >= 1) {
+			// Test the first Lavalink node for simplicity
+			const [host, port] = Lavalinks[0].split(":");
+
+			return await this.checkTcpConnection(host, parseInt(port));
+		}
+
+		return {
+			up: false,
+			latency: 0
+		};
+	}
+
+	private async iHorizonWebsite(): Promise<ResponseResult> {
+		const iHorizonWebsiteURL = "https://www.ihorizon.org";
+
+		try {
+			const startTime = Date.now();
+			const response = await axios.get(iHorizonWebsiteURL, {
+				timeout: this.timeout
+			});
+			const latency = Date.now() - startTime;
+
+			return {
+				up: response.status >= 200 && response.status < 300,
+				latency: latency
+			};
+		} catch (error) {
+			return {
+				up: false,
+				latency: 0
+			};
+		}
+	}
+
+	private async PublicBot(): Promise<ResponseResult> {
+		const PublicBot = client;
+		if (PublicBot) {
+			try {
+				const startTime = Date.now();
+				// Check if the bot is connected to Discord
+				const isReady = PublicBot.ws.status === 0; // 0 means READY state
+				const latency = Date.now() - startTime;
+
+				return {
+					up: isReady,
+					latency: PublicBot.ws.ping // Use Discord websocket ping
+				};
+			} catch (error) {
+				return {
+					up: false,
+					latency: 0
+				};
+			}
+		}
+
+		return {
+			up: false,
+			latency: 0
+		};
+	}
+
+	// Helper method to check TCP connections (for Lavalink)
+	private checkTcpConnection(
+		host: string,
+		port: number
+	): Promise<ResponseResult> {
+		return new Promise((resolve) => {
+			const startTime = Date.now();
+			const socket = new net.Socket();
+
+			socket.setTimeout(this.timeout);
+
+			socket.on("connect", () => {
+				const latency = Date.now() - startTime;
+				socket.destroy();
+				resolve({
+					up: true,
+					latency: latency
+				});
+			});
+
+			socket.on("timeout", () => {
+				socket.destroy();
+				resolve({
+					up: false,
+					latency: 0
+				});
+			});
+
+			socket.on("error", () => {
+				socket.destroy();
+				resolve({
+					up: false,
+					latency: 0
+				});
+			});
+
+			socket.connect(port, host);
+		});
+	}
+
+	private addPingToHistory(ping: number): void {
+		if (ping <= 0 || ping === -1) {
+			return;
+		}
+
+		const entry: PingHistoryEntry = {
+			timestamp: new Date(),
+			ping: ping
+		};
+
+		this.pingHistory.push(entry);
+
+		if (this.pingHistory.length > this.MAX_PING_HISTORY) {
+			this.pingHistory.shift();
+		}
+	}
+
+	private generatePingChartData(): {
+		pingData: (number | null)[];
+		timeLabels: string[];
+	} {
+		const pingData: (number | null)[] = new Array(
+			this.MAX_PING_HISTORY
+		).fill(null);
+		const timeLabels: string[] = [];
+
+		for (let i = this.MAX_PING_HISTORY - 1; i >= 0; i--) {
+			timeLabels.push(i === 0 ? "Now" : `${i}m`);
+		}
+
+		const startIndex = this.MAX_PING_HISTORY - this.pingHistory.length;
+		for (let i = 0; i < this.pingHistory.length; i++) {
+			pingData[startIndex + i] = this.pingHistory[i].ping;
+		}
+
+		return { pingData, timeLabels };
+	}
+
+	private calculatePingStats(): {
+		current: number;
+		avg: number;
+		max: number;
+		min: number;
+	} {
+		if (this.pingHistory.length === 0) {
+			return { current: 0, avg: 0, max: 0, min: 0 };
+		}
+
+		const validPings = this.pingHistory.filter((entry) => entry.ping > 0);
+
+		if (validPings.length === 0) {
+			return { current: 0, avg: 0, max: 0, min: 0 };
+		}
+
+		const current = validPings[validPings.length - 1]?.ping || 0;
+		const sum = validPings.reduce((acc, entry) => acc + entry.ping, 0);
+		const avg = Math.round(sum / validPings.length);
+		const max = Math.max(...validPings.map((entry) => entry.ping));
+		const min = Math.min(...validPings.map((entry) => entry.ping));
+
+		return { current, avg, max, min };
+	}
+
+	public getAverageWebsocketPing(): number {
+		const { avg } = this.calculatePingStats();
+		return avg;
+	}
+
+	private buildPingChartSvg(
+		pingData: (number | null)[],
+		timeLabels: string[]
+	): string {
+		const W = 904;
+		const H = 190;
+		const PAD_L = 8;
+		const PAD_R = 8;
+		const PAD_T = 12;
+		const PAD_B = 24;
+		const innerW = W - PAD_L - PAD_R;
+		const innerH = H - PAD_T - PAD_B;
+
+		const valid = pingData.filter(
+			(v): v is number => typeof v === "number" && v > 0
+		);
+		const maxPing = valid.length > 0 ? Math.max(...valid) : 1;
+		const ceiling = Math.max(maxPing * 1.2, 10);
+
+		const n = pingData.length;
+		const xAt = (i: number) => PAD_L + (innerW * i) / Math.max(n - 1, 1);
+		const yAt = (ping: number) =>
+			PAD_T + innerH - (Math.min(ping, ceiling) / ceiling) * innerH;
+
+		let linePath = "";
+		let areaPath = "";
+		let segment: string[] = [];
+
+		const flushSegment = () => {
+			if (segment.length === 1) {
+				const [solo] = segment;
+				linePath += `${solo} `;
+			} else if (segment.length > 1) {
+				const d = "M" + segment.join(" L");
+				linePath += `${d} `;
+				const firstX = segment[0].split(",")[0];
+				const lastX = segment[segment.length - 1].split(",")[0];
+				areaPath += `M${firstX},${PAD_T + innerH} L${segment.join(" L")} L${lastX},${PAD_T + innerH} Z `;
+			}
+			segment = [];
+		};
+
+		for (let i = 0; i < n; i++) {
+			const v = pingData[i];
+			if (typeof v !== "number" || v <= 0) {
+				flushSegment();
+				continue;
+			}
+			segment.push(`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`);
+		}
+		flushSegment();
+
+		if (!linePath.trim()) {
+			linePath = `M${PAD_L},${PAD_T + innerH} L${W - PAD_R},${PAD_T + innerH}`;
+		}
+
+		let grid = "";
+		for (let g = 0; g <= 3; g++) {
+			const gy = PAD_T + (innerH * g) / 3;
+			grid += `<line x1="${PAD_L}" y1="${gy.toFixed(1)}" x2="${W - PAD_R}" y2="${gy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+		}
+
+		let labels = "";
+		const tickEvery = 6;
+		for (let i = 0; i < n; i += tickEvery) {
+			if (i !== 0 && i + tickEvery >= n && i !== n - 1) continue;
+			const label = (timeLabels[i] ?? "")
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;");
+			labels += `<text x="${xAt(i).toFixed(1)}" y="${(H - 8).toFixed(1)}" fill="#8B8E98" font-size="9" font-weight="600" text-anchor="middle" font-family="Inter, system-ui, sans-serif">${label}</text>`;
+		}
+
+		return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img"><defs><linearGradient id="pingFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5865F2" stop-opacity="0.4"/><stop offset="0.5" stop-color="#5865F2" stop-opacity="0.2"/><stop offset="1" stop-color="#5865F2" stop-opacity="0"/></linearGradient></defs>${grid}<path d="${areaPath.trim()}" fill="url(#pingFill)"/>${linePath
+			.trim()
+			.split(" M")
+			.map(
+				(d, idx) =>
+					`<path d="${idx === 0 ? d : "M" + d}" fill="none" stroke="#5865F2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`
+			)
+			.join("")}${labels}</svg>`;
+	}
+
+	private async generatePingChart(): Promise<Buffer> {
+		let htmlContent = client.htmlfiles["botLatencyMonitoring"];
+
+		const { pingData, timeLabels } = this.generatePingChartData();
+		const stats = this.calculatePingStats();
+		const chartSvg = this.buildPingChartSvg(pingData, timeLabels);
+
+		htmlContent = htmlContent
+			.replace("{bot_name}", client.user?.username || "iHorizon")
+			.replace("{current_ping}", stats.current.toString())
+			.replace("{avg_ping}", stats.avg.toString())
+			.replace("{max_ping}", stats.max.toString())
+			.replace("{min_ping}", stats.min.toString())
+			.replace("{chart_svg}", chartSvg);
+
+		const image = await client.func.html2png(htmlContent, {
+			elementSelector: "body",
+			omitBackground: true,
+			selectElement: false,
+			width: 1024,
+			height: 512
+		});
+
+		return image;
+	}
+
+	// Method to check all services at once
+	public async checkAllServices(): Promise<Record<string, ResponseResult>> {
+		const results = await Promise.all([
+			this.PublicBot().then((result) => ({ name: "PublicBot", result })),
+			this.HorizonGateway().then((result) => ({
+				name: "HorizonGateway",
+				result
+			})),
+			this.Lavalink().then((result) => ({ name: "Lavalink", result })),
+			this.iHorizonWebsite().then((result) => ({
+				name: "iHorizonWebsite",
+				result
+			}))
+		]);
+
+		return results.reduce(
+			(acc, { name, result }) => {
+				acc[name] = result;
+				return acc;
+			},
+			{} as Record<string, ResponseResult>
+		);
+	}
+
+	// Format status string based on result
+	private formatStatus(result: ResponseResult): string {
+		if (result.up) {
+			return `${this.online} Online | Latency: ${result.latency}ms`;
+		} else {
+			return `${this.down} Offline`;
+		}
+	}
+
+	// Update embed fields based on monitoring results
+	private updateStatusEmbed(results: Record<string, ResponseResult>): void {
+		// Update each field in the embed based on results
+		this.statusEmbed.setFields(
+			{
+				name: "iHorizon (Public Bot)",
+				value: results.PublicBot
+					? this.formatStatus(results.PublicBot)
+					: this.evaluating,
+				inline: false
+			},
+			{
+				name: "HorizonGateway (Public/Private API)",
+				value: results.HorizonGateway
+					? this.formatStatus(results.HorizonGateway)
+					: this.evaluating,
+				inline: false
+			},
+			{
+				name: `Lavalink (Music Player)`,
+				value: results.Lavalink
+					? this.formatStatus(results.Lavalink)
+					: this.evaluating,
+				inline: false
+			},
+			{
+				name: `iHorizon Website`,
+				value: results.iHorizonWebsite
+					? this.formatStatus(results.iHorizonWebsite)
+					: this.evaluating,
+				inline: false
+			}
+		);
+
+		// Set timestamp for last update
+		this.statusEmbed.setTimestamp(new Date());
+	}
+
+	public async refresh() {
+		this.online = client.iHorizon_Emojis.Online;
+		this.down = client.iHorizon_Emojis.DND;
+		this.evaluating = client.iHorizon_Emojis.Invisible;
+
+		this.statusEmbed = new EmbedBuilder()
+			.setColor("#ff40c4")
+			.setTitle("iHorizon Status Panel")
+			.setDescription(
+				"This embed refresh every 1 minutes for showing the latest informations about iHorizon infrastructure"
+			)
+			// .setFooter(await client.func.displayBotName.footerBuilder(message))
+			.setFields(
+				{
+					name: "iHorizon (Public Bot)",
+					value: this.evaluating,
+					inline: false
+				},
+				{
+					name: "HorizonGateway (Public/Private API)",
+					value: this.evaluating,
+					inline: false
+				},
+				{
+					name: `Lavalink (Music Player)`,
+					value: this.evaluating,
+					inline: false
+				},
+				{
+					name: `iHorizon Website`,
+					value: this.evaluating,
+					inline: false
+				}
+			);
+
+		try {
+			const all_guilds = (await metasTable.get("MISC.statusEmbed")) || {};
+
+			// Check all services and update the embed
+			this.lastResult = await this.checkAllServices();
+			this.updateStatusEmbed(this.lastResult);
+
+			if (this.lastResult.PublicBot?.latency) {
+				this.addPingToHistory(this.lastResult.PublicBot.latency);
+			}
+
+			let pingChartAttachment: AttachmentBuilder | null = null;
+			try {
+				const pingChartImage = await this.generatePingChart();
+				pingChartAttachment = new AttachmentBuilder(pingChartImage, {
+					name: "ping-chart.png"
+				});
+				this.statusEmbed.setImage("attachment://ping-chart.png");
+			} catch (error) {
+				logger.err(`Failed to generate ping chart: ${error}`);
+			}
+
+			// Update all status messages in configured channels
+			for (const [guild_id, data] of Object.entries(all_guilds)) {
+				if (!client.inShard(guild_id)) continue;
+
+				try {
+					const channelData = data as any;
+					const channel = await client.channels
+						.fetch(channelData.channel_id || channelData.guild_id)
+						.catch(() => null);
+
+					if (channel && channel.isTextBased()) {
+						const textChannel = channel as
+							BaseGuildTextChannel | undefined;
+						try {
+							const msg = await textChannel?.messages
+								.fetch(channelData.message_id)
+								.catch(() => null);
+
+							if (msg) {
+								const editOptions: MessageEditOptions = {
+									content: `**Last update:** ${time(new Date(), "R")}`,
+									embeds: [this.statusEmbed],
+									files: pingChartAttachment
+										? [pingChartAttachment]
+										: []
+								};
+
+								await msg.edit(editOptions);
+							} else {
+								// The entry is kept at all costs: no delete,
+								// no new message. Retry on the next minute.
+								console.warn(
+									`[InfrastructureMonitoring] Message ${channelData.message_id} not found in channel ${channelData.channel_id} (guild ${guild_id}, shard #${client.shard?.ids[0] ?? 0}, guildCached: ${client.guilds.cache.has(guild_id)}), entry kept, retrying in 1 min.`
+								);
+							}
+						} catch (msgError) {
+							const errorCode = (msgError as { code?: unknown })
+								?.code;
+							console.error(
+								`[InfrastructureMonitoring] Failed to update message ${channelData.message_id} channel ${channelData.channel_id} (guild ${guild_id}, shard #${client.shard?.ids[0] ?? 0}, guildCached: ${client.guilds.cache.has(guild_id)}, code: ${errorCode}): ${msgError} — entry kept, retrying in 1 min.`
+							);
+						}
+					}
+				} catch (channelError) {
+					console.error(
+						`Failed to process guild ${guild_id}: ${channelError}`
+					);
+				}
+			}
+		} catch (error) {
+			console.error("Error in Infrastructure Monitoring init:", error);
+		}
+	}
+
+	// Method to start periodic monitoring
+	public async startMonitoring(): Promise<void> {
+		// Run initial check
+		await this.refresh();
+
+		// Set interval for periodic checks (converted to milliseconds)
+		const intervalMs = 60_000;
+		setInterval(() => this.refresh(), intervalMs);
+	}
+}
+
+export { InfrastructureMonitoring, ResponseResult };

@@ -1,0 +1,47 @@
+/*
+・ iHorizon Discord Bot (https://gitlab.com/ihrz/ihrz)
+
+・ Licensed under the Attribution-NonCommercial-ShareAlike 4.0 International (CC-BY-NC-SA-4.0)
+
+	・   Under the following terms:
+
+		・ Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+		・ NonCommercial — You may not use the material for commercial purposes.
+
+		・ ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+		・ No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+
+・ Mainly developed by Kisakay (https://gitlab.com/Kisakay)
+
+・ Copyright © 2020-2026 iHorizon
+*/
+
+import { tempTable } from "../../Events/client/ready.ts";
+
+export async function cooldown(
+	authorId: string,
+	method: string,
+	ms: number
+): Promise<boolean> {
+	const tn = Date.now();
+	const fetch = await getCooldownTimestamp(authorId, method);
+	if (fetch !== null && ms - (tn - fetch) > 0) return true;
+
+	await tempTable.set(`COOLDOWN.${method}.${authorId}`, tn);
+	return false;
+}
+
+export async function getCooldownTimestamp(
+	authorId: string,
+	method: string
+): Promise<number | null> {
+	const fetch = await tempTable.get(`COOLDOWN.${method}.${authorId}`);
+	return fetch || null;
+}
+
+export function capitalizeFirstLetter(string: string): string {
+	return string.charAt(0).toUpperCase() + string.slice(1);
+}
